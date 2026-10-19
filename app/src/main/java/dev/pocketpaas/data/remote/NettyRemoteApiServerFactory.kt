@@ -23,7 +23,6 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.util.concurrent.atomic.AtomicInteger
-import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -47,20 +46,6 @@ class NettyRemoteApiServerFactory(
     private val deployments: DeploymentHistoryRepository? = null,
     private val backup: PlatformBackupManager? = null,
 ) : RemoteApiServerFactory {
-    @Inject
-    constructor(
-        engineFactory: ApplicationEngineFactory<NettyApplicationEngine, NettyApplicationEngine.Configuration>,
-        config: ServerConfig,
-        policy: RemoteApiPolicy,
-        keys: ApiKeyStore,
-        sites: SiteRepository,
-        storage: RemoteUploadStorage,
-        ssh: SshManager,
-        services: ManagedServices,
-        activity: ActivityRepository,
-        deployments: DeploymentHistoryRepository,
-        backup: PlatformBackupManager,
-    ) : this(engineFactory, config, policy, keys, sites, storage, ssh, services, activity, deployments, backup)
     override fun create(bindHost: String, operations: RemoteSiteOperations): RemoteApiServer {
         require(bindHost == "127.0.0.1" || bindHost == "0.0.0.0")
         return Server(bindHost, operations)

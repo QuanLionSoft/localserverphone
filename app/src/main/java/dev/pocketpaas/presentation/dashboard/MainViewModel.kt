@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pocketpaas.core.config.DeploymentPolicy
+import dev.pocketpaas.domain.backup.BackupRestoreSummary
 import dev.pocketpaas.domain.backup.PlatformBackupManager
+import dev.pocketpaas.domain.backup.SignedBackupEnvelope
 import dev.pocketpaas.domain.dashboard.DashboardActions
 import dev.pocketpaas.domain.dashboard.DashboardDevice
 import dev.pocketpaas.domain.dashboard.DashboardNetworkState
@@ -14,7 +16,9 @@ import dev.pocketpaas.domain.logs.ActivityFilter
 import dev.pocketpaas.domain.logs.LogExportFormat
 import dev.pocketpaas.domain.logs.LogExportFormatter
 import dev.pocketpaas.domain.model.ActivityCategory
+import dev.pocketpaas.domain.model.ActivityEvent
 import dev.pocketpaas.domain.model.ActivityLevel
+import dev.pocketpaas.domain.model.DeploymentRecord
 import dev.pocketpaas.domain.model.NetworkServiceStatus
 import dev.pocketpaas.domain.model.ProjectType
 import dev.pocketpaas.domain.model.SiteCollectionState
@@ -27,22 +31,31 @@ import dev.pocketpaas.domain.remote.RemoteServerStatus
 import dev.pocketpaas.domain.repository.ActivityRepository
 import dev.pocketpaas.domain.repository.DeploymentHistoryRepository
 import dev.pocketpaas.domain.repository.SiteRepository
+import dev.pocketpaas.domain.services.ManagedServiceState
+import dev.pocketpaas.domain.services.ManagedServiceStatus
 import dev.pocketpaas.domain.services.ManagedServices
+import dev.pocketpaas.domain.services.ServiceCategory
+import dev.pocketpaas.domain.ssh.SshAuthorizedKey
+import dev.pocketpaas.domain.ssh.SshConnectionInfo
 import dev.pocketpaas.domain.ssh.SshKeyFormat
 import dev.pocketpaas.domain.ssh.SshManager
+import dev.pocketpaas.domain.ssh.SshSettings
+import dev.pocketpaas.domain.ssh.SshState
 import dev.pocketpaas.domain.usecase.InitializePlatform
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class MainViewModel(
+class MainViewModel @Inject constructor(
     private val sites: SiteRepository,
     private val runtime: RemoteServerRuntime,
     network: DashboardNetworkState,
@@ -51,43 +64,12 @@ class MainViewModel(
     private val apiKeys: ApiKeyStore,
     private val initializePlatform: InitializePlatform,
     private val deploymentPolicy: DeploymentPolicy,
-    private val sshManager: SshManager? = null,
-    private val managedServices: ManagedServices? = null,
-    private val deploymentHistory: DeploymentHistoryRepository? = null,
-    private val activityRepository: ActivityRepository? = null,
-    private val backupManager: PlatformBackupManager? = null,
+    private val sshManager: SshManager = NoOpSshManager,
+    private val managedServices: ManagedServices = NoOpManagedServices,
+    private val deploymentHistory: DeploymentHistoryRepository = NoOpDeploymentHistoryRepository,
+    private val activityRepository: ActivityRepository = NoOpActivityRepository,
+    private val backupManager: PlatformBackupManager = NoOpPlatformBackupManager,
 ) : ViewModel() {
-
-    @Inject
-    constructor(
-        sites: SiteRepository,
-        runtime: RemoteServerRuntime,
-        network: DashboardNetworkState,
-        actions: DashboardActions,
-        device: DashboardDevice,
-        apiKeys: ApiKeyStore,
-        initializePlatform: InitializePlatform,
-        deploymentPolicy: DeploymentPolicy,
-        sshManager: SshManager,
-        managedServices: ManagedServices,
-        deploymentHistory: DeploymentHistoryRepository,
-        activityRepository: ActivityRepository,
-        backupManager: PlatformBackupManager,
-    ) : this(
-        sites = sites,
-        runtime = runtime,
-        network = network,
-        actions = actions,
-        device = device,
-        apiKeys = apiKeys,
-        initializePlatform = initializePlatform,
-        deploymentPolicy = deploymentPolicy,
-        sshManager = sshManager,
-        managedServices = managedServices,
-        deploymentHistory = deploymentHistory,
-        activityRepository = activityRepository,
-        backupManager = backupManager,
-    )
 
     private val mutableState = MutableStateFlow(DashboardUiState())
     val state: StateFlow<DashboardUiState> = mutableState.asStateFlow()
@@ -147,28 +129,20 @@ class MainViewModel(
                 }
             }
         }
-        sshManager?.let { manager ->
-            viewModelScope.launch {
-                manager.state.collect { ssh ->
-                    val keys = runCatching { manager.listAuthorizedKeys() }.getOrDefault(emptyList())
-                    mutableState.update { it.copy(ssh = ssh, sshKeys = keys) }
-                }
+        viewModelScope.launch {
+            sshManager.state.collect { ssh ->
+                val keys = runCatching { sshManager.listAuthorizedKeys() }.getOrDefault(emptyList())
+                mutableState.update { it.copy(ssh = ssh, sshKeys = keys) }
             }
         }
-        managedServices?.let { services ->
-            viewModelScope.launch {
-                services.services.collect { list -> mutableState.update { it.copy(managedServices = list) } }
-            }
+        viewModelScope.launch {
+            managedServices.services.collect { list -> mutableState.update { it.copy(managedServices = list) } }
         }
-        deploymentHistory?.let { history ->
-            viewModelScope.launch {
-                history.observeRecent(50).collect { records -> mutableState.update { it.copy(deployments = records) } }
-            }
+        viewModelScope.launch {
+            deploymentHistory.observeRecent(50).collect { records -> mutableState.update { it.copy(deployments = records) } }
         }
-        activityRepository?.let { repository ->
-            viewModelScope.launch {
-                repository.observeEvents(200).collect { events -> mutableState.update { it.copy(activity = events) } }
-            }
+        viewModelScope.launch {
+            activityRepository.observeEvents(200).collect { events -> mutableState.update { it.copy(activity = events) } }
         }
         refresh()
     }
@@ -183,8 +157,8 @@ class MainViewModel(
                     initializing = false, setupFailed = false, capabilities = platform.capabilities,
                     apiPort = platform.apiPort, nginxPort = platform.nginxPort,
                 ) }
-                runCatching { sshManager?.refresh() }
-                runCatching { managedServices?.refresh() }
+                runCatching { sshManager.refresh() }
+                runCatching { managedServices.refresh() }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -316,21 +290,19 @@ class MainViewModel(
     fun setSshPublicKey(value: String) { mutableState.update { it.copy(sshDraft = it.sshDraft.copy(publicKey = value.take(8192), error = null)) } }
 
     fun toggleSsh(enabled: Boolean) {
-        val manager = sshManager ?: run { notify("SSH yöneticisi hazır değil."); return }
         viewModelScope.launch {
             try {
-                if (enabled) manager.start() else manager.stop()
+                if (enabled) sshManager.start() else sshManager.stop()
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "SSH işlemi başarısız.") }
         }
     }
 
     fun setSshPort(port: Int) {
-        val manager = sshManager ?: run { notify("SSH yöneticisi hazır değil."); return }
         viewModelScope.launch {
             try {
                 val current = state.value.ssh.settings
-                manager.updateSettings(current.copy(port = port))
+                sshManager.updateSettings(current.copy(port = port))
                 notify("SSH portu :$port olarak güncellendi.")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "SSH portu güncellenemedi.") }
@@ -338,29 +310,26 @@ class MainViewModel(
     }
 
     fun setSshPasswordAuth(enabled: Boolean) {
-        val manager = sshManager ?: return
         viewModelScope.launch {
             try {
                 val current = state.value.ssh.settings
-                manager.updateSettings(current.copy(passwordAuthEnabled = enabled))
+                sshManager.updateSettings(current.copy(passwordAuthEnabled = enabled))
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "SSH ayarı değiştirilemedi.") }
         }
     }
 
     fun setSshLan(enabled: Boolean) {
-        val manager = sshManager ?: return
         viewModelScope.launch {
             try {
                 val current = state.value.ssh.settings
-                manager.updateSettings(current.copy(listenLan = enabled))
+                sshManager.updateSettings(current.copy(listenLan = enabled))
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "SSH ayarı değiştirilemedi.") }
         }
     }
 
     fun addSshKey() {
-        val manager = sshManager ?: run { notify("SSH yöneticisi hazır değil."); return }
         val draft = state.value.sshDraft
         if (draft.keyName.isBlank() || draft.publicKey.isBlank()) {
             mutableState.update { it.copy(sshDraft = it.sshDraft.copy(error = "Anahtar adı ve public key gereklidir.")) }
@@ -369,8 +338,8 @@ class MainViewModel(
         viewModelScope.launch {
             try {
                 SshKeyFormat.parse(draft.publicKey)
-                manager.addAuthorizedKey(draft.keyName.trim(), draft.publicKey.trim())
-                val keys = runCatching { manager.listAuthorizedKeys() }.getOrDefault(emptyList())
+                sshManager.addAuthorizedKey(draft.keyName.trim(), draft.publicKey.trim())
+                val keys = runCatching { sshManager.listAuthorizedKeys() }.getOrDefault(emptyList())
                 mutableState.update { it.copy(showSshSheet = false, sshDraft = SshDraft(), sshKeys = keys) }
                 notify("SSH anahtarı eklendi.")
             } catch (failure: IllegalArgumentException) {
@@ -383,11 +352,10 @@ class MainViewModel(
     }
 
     fun removeSshKey(id: Long) {
-        val manager = sshManager ?: return
         viewModelScope.launch {
             try {
-                manager.removeAuthorizedKey(id)
-                val keys = runCatching { manager.listAuthorizedKeys() }.getOrDefault(emptyList())
+                sshManager.removeAuthorizedKey(id)
+                val keys = runCatching { sshManager.listAuthorizedKeys() }.getOrDefault(emptyList())
                 mutableState.update { it.copy(sshKeys = keys) }
                 notify("SSH anahtarı kaldırıldı.")
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -398,25 +366,22 @@ class MainViewModel(
     // --- Managed database services ---
 
     fun installService(serviceKey: String) {
-        val services = managedServices ?: return
         viewModelScope.launch {
-            try { services.install(serviceKey); notify("Kurulum isteği gönderildi.") }
+            try { managedServices.install(serviceKey); notify("Kurulum isteği gönderildi.") }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "Kurulum başarısız.") }
         }
     }
     fun startService(serviceKey: String) {
-        val services = managedServices ?: return
         viewModelScope.launch {
-            try { services.start(serviceKey) }
+            try { managedServices.start(serviceKey) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "Servis başlatılamadı.") }
         }
     }
     fun stopService(serviceKey: String) {
-        val services = managedServices ?: return
         viewModelScope.launch {
-            try { services.stop(serviceKey) }
+            try { managedServices.stop(serviceKey) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "Servis durdurulamadı.") }
         }
@@ -461,10 +426,9 @@ class MainViewModel(
     }
 
     fun clearActivityLogs() {
-        val repository = activityRepository ?: return
         viewModelScope.launch {
             try {
-                repository.clearAll()
+                activityRepository.clearAll()
                 notify("Aktivite kayıtları temizlendi.")
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -493,10 +457,9 @@ class MainViewModel(
     }
 
     fun exportBackup() {
-        val manager = backupManager ?: run { notify("Yedekleme yöneticisi hazır değil."); return }
         viewModelScope.launch {
             try {
-                val json = manager.exportEnvelopeJson(signWithApiKey = true)
+                val json = backupManager.exportEnvelopeJson(signWithApiKey = true)
                 device.copySensitive(json)
                 mutableState.update { it.copy(backupDraft = it.backupDraft.copy(lastExportedJson = json, error = null)) }
                 notify("HMAC-SHA256 imzalı platform yedeği panoya kopyalandı.")
@@ -509,7 +472,6 @@ class MainViewModel(
     }
 
     fun importBackup() {
-        val manager = backupManager ?: run { notify("Yedekleme yöneticisi hazır değil."); return }
         val draft = state.value.backupDraft
         if (draft.importJson.isBlank()) {
             mutableState.update { it.copy(backupDraft = it.backupDraft.copy(error = "Geri yüklenecek yedek JSON verisini yapıştırın.")) }
@@ -517,10 +479,10 @@ class MainViewModel(
         }
         viewModelScope.launch {
             try {
-                val summary = manager.importEnvelopeJson(draft.importJson, requireSignature = draft.requireSignature)
-                runCatching { sshManager?.refresh() }
-                runCatching { managedServices?.refresh() }
-                val keys = runCatching { sshManager?.listAuthorizedKeys().orEmpty() }.getOrDefault(emptyList())
+                val summary = backupManager.importEnvelopeJson(draft.importJson, requireSignature = draft.requireSignature)
+                runCatching { sshManager.refresh() }
+                runCatching { managedServices.refresh() }
+                val keys = runCatching { sshManager.listAuthorizedKeys() }.getOrDefault(emptyList())
                 mutableState.update {
                     it.copy(
                         showBackupSheet = false,
@@ -571,5 +533,48 @@ class MainViewModel(
     }
     private fun notify(message: String) {
         mutableState.update { it.copy(notice = DashboardNotice(++noticeId, message)) }
+    }
+
+    private object NoOpSshManager : SshManager {
+        override val state: StateFlow<SshState> = MutableStateFlow(SshState())
+        override suspend fun start() = Unit
+        override suspend fun stop() = Unit
+        override suspend fun updateSettings(settings: SshSettings) = Unit
+        override suspend fun addAuthorizedKey(name: String, publicKey: String): SshAuthorizedKey =
+            SshAuthorizedKey(0, name, publicKey, "", true, 0)
+        override suspend fun removeAuthorizedKey(id: Long) = Unit
+        override suspend fun listAuthorizedKeys(): List<SshAuthorizedKey> = emptyList()
+        override suspend fun connectionInfo(): SshConnectionInfo =
+            SshConnectionInfo("u0_a000", "127.0.0.1", SshSettings.DEFAULT_PORT, "ssh -p 8022 u0_a000@127.0.0.1")
+        override suspend fun refresh() = Unit
+    }
+
+    private object NoOpManagedServices : ManagedServices {
+        override val services: StateFlow<List<ManagedServiceState>> = MutableStateFlow(emptyList())
+        override suspend fun install(serviceKey: String): ManagedServiceState =
+            ManagedServiceState(serviceKey, serviceKey, ServiceCategory.DATABASE, false, ManagedServiceStatus.STOPPED, null, null, null, 0)
+        override suspend fun start(serviceKey: String): ManagedServiceState = install(serviceKey)
+        override suspend fun stop(serviceKey: String): ManagedServiceState = install(serviceKey)
+        override suspend fun refresh() = Unit
+    }
+
+    private object NoOpDeploymentHistoryRepository : DeploymentHistoryRepository {
+        override fun observeRecent(limit: Int): Flow<List<DeploymentRecord>> = emptyFlow()
+        override suspend fun record(record: DeploymentRecord) = Unit
+        override suspend fun recent(limit: Int): List<DeploymentRecord> = emptyList()
+    }
+
+    private object NoOpActivityRepository : ActivityRepository {
+        override fun observeEvents(limit: Int): Flow<List<ActivityEvent>> = emptyFlow()
+        override suspend fun record(category: ActivityCategory, level: ActivityLevel, message: String, detail: String?) = Unit
+        override suspend fun recent(limit: Int): List<ActivityEvent> = emptyList()
+    }
+
+    private object NoOpPlatformBackupManager : PlatformBackupManager {
+        override suspend fun exportSnapshot(signWithApiKey: Boolean): SignedBackupEnvelope =
+            SignedBackupEnvelope(version = 1, algorithm = "NONE", exportedAt = 0, payloadJson = "{}", signatureHex = null)
+        override suspend fun exportEnvelopeJson(signWithApiKey: Boolean): String = "{}"
+        override suspend fun importEnvelopeJson(rawJson: String, requireSignature: Boolean): BackupRestoreSummary =
+            BackupRestoreSummary(4, false, 0, 0, false, 0)
     }
 }

@@ -143,7 +143,31 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideRemoteApiServerFactory(implementation: NettyRemoteApiServerFactory): RemoteApiServerFactory = implementation
+    fun provideRemoteApiServerFactory(
+        engineFactory: ApplicationEngineFactory<NettyApplicationEngine, NettyApplicationEngine.Configuration>,
+        config: ServerConfig,
+        policy: RemoteApiPolicy,
+        keys: ApiKeyStore,
+        sites: SiteRepository,
+        storage: RemoteUploadStorage,
+        ssh: dev.pocketpaas.domain.ssh.SshManager,
+        services: dev.pocketpaas.domain.services.ManagedServices,
+        activity: dev.pocketpaas.domain.repository.ActivityRepository,
+        deployments: dev.pocketpaas.domain.repository.DeploymentHistoryRepository,
+        backup: PlatformBackupManager,
+    ): RemoteApiServerFactory = NettyRemoteApiServerFactory(
+        engineFactory = engineFactory,
+        config = config,
+        policy = policy,
+        keys = keys,
+        sites = sites,
+        storage = storage,
+        ssh = ssh,
+        services = services,
+        activity = activity,
+        deployments = deployments,
+        backup = backup,
+    )
 
     @Provides
     @Singleton

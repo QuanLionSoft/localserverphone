@@ -305,7 +305,7 @@ fun DashboardScreen(
                             item(key = "activity-empty") {
                                 InformationCard(
                                     title = if (state.activityFilter.isActive) "Filtreyle eşleşen kayıt yok" else "Henüz kayıt yok",
-                                    body = if (state.activityFilter.isActive) "Arama metnini veya filtre seçimlerini temizleyip tekrar deneyin." else "Yayınlar ve sistem olayları burada listelenir.",
+                                    description = if (state.activityFilter.isActive) "Arama metnini veya filtre seçimlerini temizleyip tekrar deneyin." else "Yayınlar ve sistem olayları burada listelenir.",
                                 )
                             }
                         }
