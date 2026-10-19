@@ -1,0 +1,76 @@
+{
+  "phase": 3,
+  "verifiedDate": "2026-10-13",
+  "jvm": {
+    "tests": 43.0,
+    "passed": 42.0,
+    "failed": 0.0,
+    "skipped": 1.0,
+    "suites": [
+      {
+        "name": "dev.pocketpaas.data.process.ShellExecutorTest",
+        "tests": 14,
+        "passed": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "dev.pocketpaas.data.process.termux.TermuxBridgeIntegrationTest",
+        "tests": 7,
+        "passed": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      {
+        "name": "dev.pocketpaas.data.repository.DefaultPlatformRepositoryTest",
+        "tests": 3,
+        "passed": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "dev.pocketpaas.data.repository.DefaultSiteRepositoryTest",
+        "tests": 9,
+        "passed": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "dev.pocketpaas.domain.model.SiteInputTest",
+        "tests": 4,
+        "passed": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "dev.pocketpaas.verification.RoomSqlVerificationTest",
+        "tests": 6,
+        "passed": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "python": {
+    "tests": 33,
+    "passed": 29,
+    "failed": 0,
+    "skipped": 4
+  },
+  "androidAdaptersCompiledAgainstApi": 36,
+  "apkBuilt": false,
+  "deviceTestsRun": false,
+  "host": "Windows",
+  "limitations": [
+    "POSIX shell, process groups, port restart and symlink checks skipped on Windows.",
+    "Windows path resolver adapter exists only in host test fixtures.",
+    "Android Hilt graph, lint, RUN_COMMAND and device runtime not verified.",
+    "AAPT2 ZIP writing crashes with 0xC0000005 on this build host."
+  ]
+}

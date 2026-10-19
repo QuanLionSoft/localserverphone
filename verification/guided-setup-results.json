@@ -1,0 +1,1076 @@
+{
+  "version": "0.3.0-debug",
+  "versionCode": 3,
+  "verifiedDate": "2026-10-18",
+  "coreJvm": {
+    "tests": 224,
+    "passed": 222,
+    "skipped": 2,
+    "failed": 0,
+    "suites": [
+      {
+        "name": "dev.pocketpaas.data.dashboard.BoundedProjectArchiveSourceTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 6
+      },
+      {
+        "name": "dev.pocketpaas.data.dashboard.DashboardOperationCoordinatorTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 7
+      },
+      {
+        "name": "dev.pocketpaas.data.deployment.DeploymentOrchestratorTest",
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 24
+      },
+      {
+        "name": "dev.pocketpaas.data.deployment.ShellDeploymentWorkspaceTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 4
+      },
+      {
+        "name": "dev.pocketpaas.data.network.CloudflareLogParserTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 6
+      },
+      {
+        "name": "dev.pocketpaas.data.network.NativeNginxIntegrationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 3
+      },
+      {
+        "name": "dev.pocketpaas.data.network.NetworkManagerTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 18
+      },
+      {
+        "name": "dev.pocketpaas.data.network.NginxConfigBuilderTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 12
+      },
+      {
+        "name": "dev.pocketpaas.data.process.ShellExecutorTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 18
+      },
+      {
+        "name": "dev.pocketpaas.data.process.termux.TermuxBridgeIntegrationTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 12
+      },
+      {
+        "name": "dev.pocketpaas.data.remote.NettyRemoteApiServerFactoryTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 10
+      },
+      {
+        "name": "dev.pocketpaas.data.remote.RemoteApiModuleTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 21
+      },
+      {
+        "name": "dev.pocketpaas.data.remote.RemoteServerRuntimeManagerTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 21
+      },
+      {
+        "name": "dev.pocketpaas.data.repository.DefaultPlatformRepositoryTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 3
+      },
+      {
+        "name": "dev.pocketpaas.data.repository.DefaultServerStateRepositoryTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 3
+      },
+      {
+        "name": "dev.pocketpaas.data.repository.DefaultSiteRepositoryTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 9
+      },
+      {
+        "name": "dev.pocketpaas.data.runtime.ShellRuntimeFileStoreTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 2
+      },
+      {
+        "name": "dev.pocketpaas.data.runtime.TermuxRuntimeRecoveryTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 7
+      },
+      {
+        "name": "dev.pocketpaas.data.setup.TermuxSetupVerifierTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 7
+      },
+      {
+        "name": "dev.pocketpaas.domain.model.SiteInputTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 4
+      },
+      {
+        "name": "dev.pocketpaas.domain.setup.ForegroundStartGateTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 8
+      },
+      {
+        "name": "dev.pocketpaas.domain.setup.TermuxPermissionStatusTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 8
+      },
+      {
+        "name": "dev.pocketpaas.domain.setup.TermuxSetupInstructionsTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 2
+      },
+      {
+        "name": "dev.pocketpaas.verification.RoomSqlVerificationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 7
+      }
+    ]
+  },
+  "androidUnitTests": {
+    "tests": 173,
+    "passed": 172,
+    "skipped": 1,
+    "failed": 0,
+    "suites": [
+      {
+        "name": "dev.pocketpaas.data.dashboard.BoundedProjectArchiveSourceTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 6
+      },
+      {
+        "name": "dev.pocketpaas.data.dashboard.DashboardOperationCoordinatorTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 7
+      },
+      {
+        "name": "dev.pocketpaas.data.network.CloudflareLogParserTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 6
+      },
+      {
+        "name": "dev.pocketpaas.data.network.NginxConfigBuilderTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 12
+      },
+      {
+        "name": "dev.pocketpaas.data.remote.NettyRemoteApiServerFactoryTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 10
+      },
+      {
+        "name": "dev.pocketpaas.data.remote.RemoteApiModuleTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 21
+      },
+      {
+        "name": "dev.pocketpaas.data.remote.RemoteServerRuntimeManagerTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 21
+      },
+      {
+        "name": "dev.pocketpaas.data.repository.DefaultPlatformRepositoryTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 3
+      },
+      {
+        "name": "dev.pocketpaas.data.repository.DefaultServerStateRepositoryTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 3
+      },
+      {
+        "name": "dev.pocketpaas.data.repository.DefaultSiteRepositoryTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 9
+      },
+      {
+        "name": "dev.pocketpaas.data.runtime.TermuxRuntimeRecoveryTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 7
+      },
+      {
+        "name": "dev.pocketpaas.data.setup.TermuxSetupVerifierTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 7
+      },
+      {
+        "name": "dev.pocketpaas.domain.model.SiteInputTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 4
+      },
+      {
+        "name": "dev.pocketpaas.domain.setup.ForegroundStartGateTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 8
+      },
+      {
+        "name": "dev.pocketpaas.domain.setup.TermuxPermissionStatusTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 8
+      },
+      {
+        "name": "dev.pocketpaas.domain.setup.TermuxSetupInstructionsTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 2
+      },
+      {
+        "name": "dev.pocketpaas.presentation.dashboard.MainViewModelTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 16
+      },
+      {
+        "name": "dev.pocketpaas.presentation.setup.SetupViewModelTest",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 22
+      }
+    ]
+  },
+  "newShellTests": {
+    "tests": 20,
+    "passed": 18,
+    "skipped": 2,
+    "failed": 0,
+    "explanation": "Native Windows BusyBox sh executes the exact command; pkg/runtime executables are fixtures. Two symlink controls require Windows privilege."
+  },
+  "reusedUnchangedPythonTests": {
+    "source": "phase7-results.json",
+    "verificationDate": "2026-10-18",
+    "assetHashesMatched": {
+      "pocketpaas_agent.py": "f14caef01367c5f85304b3876cc8d7cda8a936048b1dab0eadc78e7d115d681b",
+      "pocketpaas_files.py": "0b1de3bf5e5cec72efaf633bc043f20e23e2bd60d537bcfc292f1e81cf739455",
+      "pocketpaas_deploy.py": "a3330877c5ca444c32325a924b5bcaaf91747d7caa24336e822ef3f3805770db"
+    },
+    "python": {
+      "agent": {
+        "tests": 57,
+        "failed": 0,
+        "skipped": 5,
+        "passed": 52
+      },
+      "files": {
+        "tests": 26,
+        "failed": 0,
+        "skipped": 7,
+        "passed": 19
+      },
+      "deployment": {
+        "tests": 48,
+        "failed": 0,
+        "skipped": 4,
+        "passed": 44
+      }
+    }
+  },
+  "uniqueTotals": {
+    "passed": 393,
+    "failed": 0,
+    "skipped": 20,
+    "tests": 413
+  },
+  "duplicateJvmCases": 135,
+  "newSetupTests": {
+    "passed": 65,
+    "failed": 0,
+    "skipped": 2,
+    "tests": 67
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 37,
+    "groups": {
+      "GradleDependency": 14,
+      "ModifierParameter": 1,
+      "NewerVersionAvailable": 15,
+      "SdCardPath": 3,
+      "UseKtx": 4
+    }
+  },
+  "apk": {
+    "apk": "PocketPaaS-RehberliKurulum-debug.apk",
+    "bytes": 17790588,
+    "sha256": "68c8d781dcb6220933c8807e47ae644ce61ca6f3a8799f22be76b2815b0db394",
+    "entries": 207,
+    "zipCrcValid": true,
+    "resourceTableStored": true,
+    "dex": [
+      "classes.dex",
+      "classes10.dex",
+      "classes11.dex",
+      "classes12.dex",
+      "classes13.dex",
+      "classes14.dex",
+      "classes15.dex",
+      "classes16.dex",
+      "classes17.dex",
+      "classes18.dex",
+      "classes19.dex",
+      "classes2.dex",
+      "classes3.dex",
+      "classes4.dex",
+      "classes5.dex",
+      "classes6.dex",
+      "classes7.dex",
+      "classes8.dex",
+      "classes9.dex"
+    ],
+    "requiredApplicationClassesPresent": [
+      "Ldev/pocketpaas/MainActivity;",
+      "Ldev/pocketpaas/ApplicationClass;",
+      "Ldev/pocketpaas/presentation/dashboard/MainViewModel;",
+      "Ldev/pocketpaas/data/remote/android/RemoteServerService;",
+      "Ldev/pocketpaas/data/deployment/DeploymentOrchestrator;",
+      "Ldev/pocketpaas/presentation/setup/SetupViewModel;",
+      "Ldev/pocketpaas/presentation/setup/SetupScreenKt;",
+      "Ldev/pocketpaas/data/setup/TermuxSetupVerifier;",
+      "Ldev/pocketpaas/domain/setup/TermuxSetupInstructions;",
+      "Ldev/pocketpaas/data/system/AndroidSystemManager;",
+      "Ldev/pocketpaas/domain/setup/TermuxPermissionStatus;",
+      "Ldev/pocketpaas/domain/setup/ForegroundStartGate;"
+    ],
+    "nativeLibraries": [
+      "lib/arm64-v8a/libandroidx.graphics.path.so",
+      "lib/armeabi-v7a/libandroidx.graphics.path.so",
+      "lib/x86/libandroidx.graphics.path.so",
+      "lib/x86_64/libandroidx.graphics.path.so"
+    ],
+    "elfLoadSegmentAlignments": {
+      "lib/arm64-v8a/libandroidx.graphics.path.so": [
+        16384,
+        16384,
+        16384
+      ],
+      "lib/armeabi-v7a/libandroidx.graphics.path.so": [
+        16384,
+        16384,
+        16384
+      ],
+      "lib/x86/libandroidx.graphics.path.so": [
+        16384,
+        16384,
+        16384
+      ],
+      "lib/x86_64/libandroidx.graphics.path.so": [
+        16384,
+        16384,
+        16384
+      ]
+    },
+    "runtimeAssetSha256": {
+      "pocketpaas_agent.py": "f14caef01367c5f85304b3876cc8d7cda8a936048b1dab0eadc78e7d115d681b",
+      "pocketpaas_files.py": "0b1de3bf5e5cec72efaf633bc043f20e23e2bd60d537bcfc292f1e81cf739455",
+      "pocketpaas_deploy.py": "a3330877c5ca444c32325a924b5bcaaf91747d7caa24336e822ef3f3805770db"
+    }
+  },
+  "androidTasks": {
+    "assembleDebug": "passed",
+    "testDebugUnitTest": "passed",
+    "lintDebug": "passed",
+    "assembleDebugAndroidTest": "passed"
+  },
+  "instrumentationCompiledNotExecuted": [
+    {
+      "path": "app/src/androidTest/java/dev/pocketpaas/data/local/PlatformSettingsPersistenceTest.kt",
+      "tests": 2
+    },
+    {
+      "path": "app/src/androidTest/java/dev/pocketpaas/data/local/SiteMigrationTest.kt",
+      "tests": 1
+    },
+    {
+      "path": "app/src/androidTest/java/dev/pocketpaas/data/remote/android/AndroidApiKeyStoreTest.kt",
+      "tests": 6
+    },
+    {
+      "path": "app/src/androidTest/java/dev/pocketpaas/presentation/dashboard/DashboardScreenTest.kt",
+      "tests": 9
+    },
+    {
+      "path": "app/src/androidTest/java/dev/pocketpaas/presentation/setup/SetupScreenTest.kt",
+      "tests": 17
+    }
+  ],
+  "portableSourcesHashMatched": [
+    "app/src/main/java/dev/pocketpaas/core/config/DeploymentPolicy.kt",
+    "app/src/main/java/dev/pocketpaas/core/config/NetworkPolicy.kt",
+    "app/src/main/java/dev/pocketpaas/core/config/ProcessPolicy.kt",
+    "app/src/main/java/dev/pocketpaas/core/config/RemoteApiPolicy.kt",
+    "app/src/main/java/dev/pocketpaas/core/config/ServerConfig.kt",
+    "app/src/main/java/dev/pocketpaas/core/config/SiteStoragePolicy.kt",
+    "app/src/main/java/dev/pocketpaas/core/di/Qualifiers.kt",
+    "app/src/main/java/dev/pocketpaas/data/dashboard/android/AndroidContentUriArchiveSource.kt",
+    "app/src/main/java/dev/pocketpaas/data/dashboard/android/AndroidDashboardActions.kt",
+    "app/src/main/java/dev/pocketpaas/data/dashboard/android/AndroidDashboardDevice.kt",
+    "app/src/main/java/dev/pocketpaas/data/dashboard/BoundedProjectArchiveSource.kt",
+    "app/src/main/java/dev/pocketpaas/data/dashboard/DashboardOperationCoordinator.kt",
+    "app/src/main/java/dev/pocketpaas/data/deployment/android/DeploymentEngine.kt",
+    "app/src/main/java/dev/pocketpaas/data/deployment/DeploymentOrchestrator.kt",
+    "app/src/main/java/dev/pocketpaas/data/deployment/ShellDeploymentWorkspace.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/PlatformSettingsDao.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/PlatformSettingsEntity.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/PocketPaaSDatabase.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/ServerStateSchema.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/SiteDao.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/SiteEntity.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/SiteMappers.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/SiteSchema.kt",
+    "app/src/main/java/dev/pocketpaas/data/local/SiteTypeConverters.kt",
+    "app/src/main/java/dev/pocketpaas/data/network/CloudflareLogParser.kt",
+    "app/src/main/java/dev/pocketpaas/data/network/NetworkManager.kt",
+    "app/src/main/java/dev/pocketpaas/data/network/NginxConfigBuilder.kt",
+    "app/src/main/java/dev/pocketpaas/data/process/LocalProcessLauncher.kt",
+    "app/src/main/java/dev/pocketpaas/data/process/ShellExecutor.kt",
+    "app/src/main/java/dev/pocketpaas/data/process/termux/android/AndroidTermuxAgentBootstrap.kt",
+    "app/src/main/java/dev/pocketpaas/data/process/termux/android/AndroidTermuxCredentialsStore.kt",
+    "app/src/main/java/dev/pocketpaas/data/process/termux/RemoteProcess.kt",
+    "app/src/main/java/dev/pocketpaas/data/process/termux/TermuxBridge.kt",
+    "app/src/main/java/dev/pocketpaas/data/process/termux/TermuxBridgeCredentials.kt",
+    "app/src/main/java/dev/pocketpaas/data/process/termux/TermuxProcessLauncher.kt",
+    "app/src/main/java/dev/pocketpaas/data/remote/android/AndroidApiKeyStore.kt",
+    "app/src/main/java/dev/pocketpaas/data/remote/android/RemoteServerController.kt",
+    "app/src/main/java/dev/pocketpaas/data/remote/android/RemoteServerService.kt",
+    "app/src/main/java/dev/pocketpaas/data/remote/NettyRemoteApiServerFactory.kt",
+    "app/src/main/java/dev/pocketpaas/data/remote/RemoteApiModule.kt",
+    "app/src/main/java/dev/pocketpaas/data/remote/RemoteConnectionGuard.kt",
+    "app/src/main/java/dev/pocketpaas/data/remote/RemoteMultipartUpload.kt",
+    "app/src/main/java/dev/pocketpaas/data/remote/RemoteServerRuntimeManager.kt",
+    "app/src/main/java/dev/pocketpaas/data/repository/DefaultPlatformRepository.kt",
+    "app/src/main/java/dev/pocketpaas/data/repository/DefaultServerStateRepository.kt",
+    "app/src/main/java/dev/pocketpaas/data/repository/DefaultSiteRepository.kt",
+    "app/src/main/java/dev/pocketpaas/data/runtime/ShellRuntimeFileStore.kt",
+    "app/src/main/java/dev/pocketpaas/data/runtime/TermuxRuntimeArchiveTransfer.kt",
+    "app/src/main/java/dev/pocketpaas/data/runtime/TermuxRuntimeRecovery.kt",
+    "app/src/main/java/dev/pocketpaas/data/setup/android/AndroidSetupPreferences.kt",
+    "app/src/main/java/dev/pocketpaas/data/setup/TermuxSetupVerifier.kt",
+    "app/src/main/java/dev/pocketpaas/domain/dashboard/DashboardActions.kt",
+    "app/src/main/java/dev/pocketpaas/domain/dashboard/DashboardDevice.kt",
+    "app/src/main/java/dev/pocketpaas/domain/deployment/DeploymentControl.kt",
+    "app/src/main/java/dev/pocketpaas/domain/deployment/DeploymentResult.kt",
+    "app/src/main/java/dev/pocketpaas/domain/deployment/DeploymentWorkspace.kt",
+    "app/src/main/java/dev/pocketpaas/domain/deployment/ProjectArchiveSource.kt",
+    "app/src/main/java/dev/pocketpaas/domain/deployment/RuntimeArchiveTransfer.kt",
+    "app/src/main/java/dev/pocketpaas/domain/deployment/RuntimeRecoveryWorkspace.kt",
+    "app/src/main/java/dev/pocketpaas/domain/model/NetworkState.kt",
+    "app/src/main/java/dev/pocketpaas/domain/model/PlatformInfo.kt",
+    "app/src/main/java/dev/pocketpaas/domain/model/Site.kt",
+    "app/src/main/java/dev/pocketpaas/domain/model/SiteInput.kt",
+    "app/src/main/java/dev/pocketpaas/domain/network/ManagedNetwork.kt",
+    "app/src/main/java/dev/pocketpaas/domain/network/SiteProxy.kt",
+    "app/src/main/java/dev/pocketpaas/domain/process/ProcessExecutor.kt",
+    "app/src/main/java/dev/pocketpaas/domain/process/ProcessLauncher.kt",
+    "app/src/main/java/dev/pocketpaas/domain/process/ProcessModels.kt",
+    "app/src/main/java/dev/pocketpaas/domain/remote/ApiKeyStore.kt",
+    "app/src/main/java/dev/pocketpaas/domain/remote/LocalSiteOperations.kt",
+    "app/src/main/java/dev/pocketpaas/domain/remote/RemoteApiServer.kt",
+    "app/src/main/java/dev/pocketpaas/domain/remote/RemoteServerRuntime.kt",
+    "app/src/main/java/dev/pocketpaas/domain/remote/RemoteSiteOperations.kt",
+    "app/src/main/java/dev/pocketpaas/domain/repository/PlatformRepository.kt",
+    "app/src/main/java/dev/pocketpaas/domain/repository/ServerStateRepository.kt",
+    "app/src/main/java/dev/pocketpaas/domain/repository/SiteRepository.kt",
+    "app/src/main/java/dev/pocketpaas/domain/runtime/RuntimeRecovery.kt",
+    "app/src/main/java/dev/pocketpaas/domain/setup/ForegroundStartGate.kt",
+    "app/src/main/java/dev/pocketpaas/domain/setup/SetupPreferences.kt",
+    "app/src/main/java/dev/pocketpaas/domain/setup/SetupVerifier.kt",
+    "app/src/main/java/dev/pocketpaas/domain/setup/TermuxPermissionStatus.kt",
+    "app/src/main/java/dev/pocketpaas/domain/setup/TermuxSetupInstructions.kt",
+    "app/src/main/java/dev/pocketpaas/domain/system/RuntimeDeploymentScriptSource.kt",
+    "app/src/main/java/dev/pocketpaas/domain/system/RuntimeFileStore.kt",
+    "app/src/main/java/dev/pocketpaas/domain/system/RuntimeScriptSource.kt",
+    "app/src/main/java/dev/pocketpaas/domain/system/SystemManager.kt",
+    "app/src/main/java/dev/pocketpaas/domain/usecase/InitializePlatform.kt",
+    "app/src/main/java/dev/pocketpaas/presentation/dashboard/DashboardUiState.kt"
+  ],
+  "productionSourceHashes": [
+    {
+      "path": "app/src/main/AndroidManifest.xml",
+      "sha256": "cb8a9714f993fddf77d8f4d1508456e5131d41136ce5f71acd6f36a65224c073"
+    },
+    {
+      "path": "app/src/main/assets/__pycache__/pocketpaas_agent.cpython-312.pyc",
+      "sha256": "63d3b36a379a0eb4a14f636e253a96ddd76847bc2dd5bbbbde6bf23723a92d24"
+    },
+    {
+      "path": "app/src/main/assets/__pycache__/pocketpaas_deploy.cpython-312.pyc",
+      "sha256": "29464dd123996b36753a0f0a0fbc80bb5db29bc1dc0cd633dfe1c0183f007c0d"
+    },
+    {
+      "path": "app/src/main/assets/__pycache__/pocketpaas_files.cpython-312.pyc",
+      "sha256": "a62ab0dc499e31398fdd6e8b5598e6d99e4e902d452f7dca3924e2c7612a15a8"
+    },
+    {
+      "path": "app/src/main/assets/pocketpaas_agent.py",
+      "sha256": "f14caef01367c5f85304b3876cc8d7cda8a936048b1dab0eadc78e7d115d681b"
+    },
+    {
+      "path": "app/src/main/assets/pocketpaas_deploy.py",
+      "sha256": "a3330877c5ca444c32325a924b5bcaaf91747d7caa24336e822ef3f3805770db"
+    },
+    {
+      "path": "app/src/main/assets/pocketpaas_files.py",
+      "sha256": "0b1de3bf5e5cec72efaf633bc043f20e23e2bd60d537bcfc292f1e81cf739455"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/ApplicationClass.kt",
+      "sha256": "2078af685eb3ef26e5fef1de1550ec28c4931318456f88914f88bfae349e601b"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/core/config/DeploymentPolicy.kt",
+      "sha256": "a6c22384fe1ca4d365c5f25ef5e0433d7ad37d42fe4b058955d88db9f0bf8f04"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/core/config/NetworkPolicy.kt",
+      "sha256": "76e9f715e59fc9a907f3bb2bd5bf9e40dc430c50563f88cc49bf9cfc923cd55c"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/core/config/ProcessPolicy.kt",
+      "sha256": "6ad88fdf47eb297d69cae50b22f316ae92f301a690c4bee79c759aadad9e7c33"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/core/config/RemoteApiPolicy.kt",
+      "sha256": "be48d5159cdc7c7e3792c93815675a4f6b73549a46462a5ff42e56588b0b025a"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/core/config/ServerConfig.kt",
+      "sha256": "99d45c8afea56e14e7090dab6f4476b9c092725823666a1847597f870b7f0f7f"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/core/config/SiteStoragePolicy.kt",
+      "sha256": "749c626674814f15439da9f949b73878dd03efab7415b641a22bc78b575c306f"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/core/di/AppModule.kt",
+      "sha256": "56402b74342b52a1fbd7653d7f1ee95c8b9143633e75ba6c3627045184e7f22b"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/core/di/Qualifiers.kt",
+      "sha256": "fba7a188d06f9e012c7e8eee4abcb769b5db1ed28f1b44e36036b4107297ed0f"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/dashboard/android/AndroidContentUriArchiveSource.kt",
+      "sha256": "2fe22ba2c80ddffe4fbcc1f0ea76d0a9d668aa37d487fc354f73eb573a00c5b2"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/dashboard/android/AndroidDashboardActions.kt",
+      "sha256": "b7c2f86cc630b6b1597e6a2d25f94270598eb34adce3eefff19468b7ac53d570"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/dashboard/android/AndroidDashboardDevice.kt",
+      "sha256": "0d08a91203e197b8a66235c93e1a8114568b076afba434c57d9b8f2073ddf178"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/dashboard/BoundedProjectArchiveSource.kt",
+      "sha256": "fce593115dd0f253358c89287fc28595bc18fd7085af4ed2d16a4b4bf071dca0"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/dashboard/DashboardOperationCoordinator.kt",
+      "sha256": "c187c8d2f1c8606d6371146e19f832506922f2b01061bb0d5f1a705abb2723c7"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/deployment/android/DeploymentEngine.kt",
+      "sha256": "3b751725445f69cb6dd0c0770f31c6f6fcbae59f55483728fc7bed26a98cb8b1"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/deployment/DeploymentOrchestrator.kt",
+      "sha256": "41c7689d62dfb6ddf8210298e716eb3a00e890a1edc4fb833a9aa72f0450c650"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/deployment/ShellDeploymentWorkspace.kt",
+      "sha256": "863307ac502f1a82ce0bdc51437085278aef0d7bf84de643cfd0f2bb610cce78"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/DatabaseMigrations.kt",
+      "sha256": "7735f226ec6ef4c43cb9e08fcbc94ad9237e862b79b511f1bfa15a326fb28d45"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/PlatformSettingsDao.kt",
+      "sha256": "19348cd6979551fff7b83dfc7b029d8d3ba28b88e264a2dd047af68e4d894571"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/PlatformSettingsEntity.kt",
+      "sha256": "36b0e7a1a3afa16d287ac8f5a5a67beba82c4d2dd74101d61549288fef601cdc"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/PocketPaaSDatabase.kt",
+      "sha256": "e2f17bd9d99243a12e16ecd36fa31a135e9ef919cda52c7de14c4102f6604bad"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/ServerStateSchema.kt",
+      "sha256": "db8baf4d7a43228d3d51465de307bc1292bb5cbe57d89ad15eb847b316d41c30"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/SiteDao.kt",
+      "sha256": "0bf683576b95b03e9d3affdf10c9f504f21a9ffe6be436b69e2f8b1efa7a5712"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/SiteEntity.kt",
+      "sha256": "98866141b9b0933b95c1062bc1aa3f79268eac436de9bd0b253a4f757d1c1fec"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/SiteMappers.kt",
+      "sha256": "1823c12dcff3d36769a1b72adbbd0a7ebb623d7da766241f1dc69f5a3723450e"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/SiteSchema.kt",
+      "sha256": "0857930e0c6a100b8e6d68b5e2515d16a2fb173fb3f262cb0e01288b997c252c"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/local/SiteTypeConverters.kt",
+      "sha256": "9ce5217876e1e71c1438e918e2430ac47daacb0cae504101b9afb71e89dee3be"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/network/CloudflareLogParser.kt",
+      "sha256": "f9a3f9e401da21e0fbe9df60621c32b6074e58a9a50c554b34c64c48a8f6fd69"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/network/NetworkManager.kt",
+      "sha256": "53edd6d035246d814a78cde7ebff893d8223dba4d1565ea2f20da5a6b70ceadb"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/network/NginxConfigBuilder.kt",
+      "sha256": "012bb9350420e94378e54ec614a35dc07b1cdea67ccee1800726532af2842582"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/process/LocalProcessLauncher.kt",
+      "sha256": "f50080267e4d4bab6ed966be7434e350a5f566185bae677a4dcb0e7e8377cf8e"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/process/ShellExecutor.kt",
+      "sha256": "09fb417367ac48f85185a7a0eaa75f1ae2a0233d3d8f5a6dd0db969a4a0d5196"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/process/termux/android/AndroidTermuxAgentBootstrap.kt",
+      "sha256": "0d587f3c6b0fda9cd099e4affab119b0663dba8f43a56b96975f2f8989b4f46c"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/process/termux/android/AndroidTermuxCredentialsStore.kt",
+      "sha256": "3e274e19e9606f3bc1f35e639d8d23c9666408cafc5f1d5bd0c9a087ab39eedf"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/process/termux/RemoteProcess.kt",
+      "sha256": "3fc79f98a1cbacee8575bb5e8e082e3fe5388d0ca4a49c37ff8f1eb3079fe984"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/process/termux/TermuxBridge.kt",
+      "sha256": "e4dfb683d92f0eea9395a4338c556736ee4f408f785a76a1b7f1e8eaa6fd764b"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/process/termux/TermuxBridgeCredentials.kt",
+      "sha256": "4b5019b1d29c061739a2a8445b328646050ae4b35fa83c03c378a62969e9fed2"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/process/termux/TermuxProcessLauncher.kt",
+      "sha256": "e23e6abe894212347d4506c97be213f166e21f14559792e728c493e52f7c718f"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/remote/android/AndroidApiKeyStore.kt",
+      "sha256": "bf685859361efd6851203f656d1dbea1c05967298ba6a857f387b5b99e0a74e8"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/remote/android/RemoteServerController.kt",
+      "sha256": "4f7225872be414882937be6f956e7aa497d7a0ee7c5410bb5b4b905c4c708ae9"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/remote/android/RemoteServerService.kt",
+      "sha256": "8a4ac41e6899fd75234b8f3a7d81b64d4f82f8957dfd30e0a46a42bdfd434732"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/remote/NettyRemoteApiServerFactory.kt",
+      "sha256": "13476846a9a892b3af2a0feb49dc614ee50a0e8fa1d5f5c89321512d01528189"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/remote/RemoteApiModule.kt",
+      "sha256": "e1cee26fb24eb0d977b16f96d85144cfa29915abfe6c261e6778771fe11523de"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/remote/RemoteConnectionGuard.kt",
+      "sha256": "705498c5715ef096d157967854ae4c3fde0499b9f66ce3625b17531a100ffdb2"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/remote/RemoteMultipartUpload.kt",
+      "sha256": "bc1acdc3e8820580f7ee519e7fa56e2b3e2e740a1d0054889cdb0c9478c02b0c"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/remote/RemoteServerRuntimeManager.kt",
+      "sha256": "492fa51c727c47494426866932554fcb685854d0882a09873e59de20b6ff922b"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/repository/DefaultPlatformRepository.kt",
+      "sha256": "9ced9b271a55cb8383a972014cb58f07063fae38379b50f92d8767d0d89153b1"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/repository/DefaultServerStateRepository.kt",
+      "sha256": "b7490c5a259e6add4096c2d4776f776d55dd4b8f12bdbce158c0b597efd6299c"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/repository/DefaultSiteRepository.kt",
+      "sha256": "0ead3eb45ef9c90d1d9b4e402966e12cb0631b99eecda688d98eb2ffc619d1b8"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/runtime/ShellRuntimeFileStore.kt",
+      "sha256": "db7d9286ea135110d06f97e690c5930d179eedef6b7e50b099c0ce8299ed4444"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/runtime/TermuxRuntimeArchiveTransfer.kt",
+      "sha256": "fa0634da8443e2d38c9d1035e27b214a358c643f376da741b1ed1d4c98cfe148"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/runtime/TermuxRuntimeRecovery.kt",
+      "sha256": "2a40251cb47dbc20462555cde967dee25a9910edd29e6ebd5b539507d3a23b6e"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/setup/android/AndroidSetupPreferences.kt",
+      "sha256": "1fe79d85bab8f8d7e24398519d0404d106953b3fbfaf74a51bc887cd49765cf8"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/setup/TermuxSetupVerifier.kt",
+      "sha256": "6959579b7f1ae63ce44cd005417f11743ae4e1f583ae4379968185794ae80644"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/data/system/AndroidSystemManager.kt",
+      "sha256": "9426fc7c567b139aa803cd88b53018e651a496a2171f04c6c1911043f285e813"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/dashboard/DashboardActions.kt",
+      "sha256": "c223f8500066a1a465f2ae03c95c8a878d116e54e17e4e889c70e66dd5be581d"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/dashboard/DashboardDevice.kt",
+      "sha256": "4a71d846f5b3b4a654400010fb139934182149b03b34649c2037bc26633527dc"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/deployment/DeploymentControl.kt",
+      "sha256": "06cb52e348155b6db03dd251a3d28544a640a518e6956ee899b0aa3624634469"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/deployment/DeploymentResult.kt",
+      "sha256": "d03596e7cb63b75426fcf0b7c356e158ec7b9b2bd81bdbadae1ad1331f5c05d0"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/deployment/DeploymentWorkspace.kt",
+      "sha256": "0f3d97aca9734008e557a1a3f9ada5f2a114b0ab9f7c130e6b28e2820d638bb2"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/deployment/ProjectArchiveSource.kt",
+      "sha256": "c6365d5ab48c3866fcdd2d5d05f3fcdf1f23087ef2073bed497488ba37651feb"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/deployment/RuntimeArchiveTransfer.kt",
+      "sha256": "9fd4c1cf0074215a3562beea9ad7933094d0fcfed78c6f659e442baf9667e6ce"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/deployment/RuntimeRecoveryWorkspace.kt",
+      "sha256": "33597e6eec01a7fe799386eae08e1cc7a9f7cb11d1a6ecadf909627485ea5813"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/model/NetworkState.kt",
+      "sha256": "7af5859c3508bb4b0b7bc580dd90a43a862433db03711e17aad897005f586d37"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/model/PlatformInfo.kt",
+      "sha256": "ef3b0c0ac8cbfebd631c67a6c72fbb93fdeceb59e0045ff731ec079625dcec97"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/model/Site.kt",
+      "sha256": "b1bd337c8fcae4c697ecef63e9dd5805711d5d7f4435209538370fe1dcf62f1d"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/model/SiteInput.kt",
+      "sha256": "4a4cc56f2a9bf40950ca687072cf2bec82fbbe10f0c85790279bf6e1d0657fcd"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/network/ManagedNetwork.kt",
+      "sha256": "0b750d3537d1149556431dd2af4177c87b24abbabeb75d13d91e5c12ad3d472d"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/network/SiteProxy.kt",
+      "sha256": "bb80481488f50f5470cb5c3da4973f03b05135af227698b10c8d073628e3b0d4"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/process/ProcessExecutor.kt",
+      "sha256": "c5dd035fc4b4ad75e28bbfd1727221c6cc0a7d8c36db9852f13f9ba29d894e2f"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/process/ProcessLauncher.kt",
+      "sha256": "2091cd492cb5d282165e2d09ab1ca0d989f91f56fabe696b479d67bd336c6428"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/process/ProcessModels.kt",
+      "sha256": "2ca253865550596529db249d8e47361b18917c653d7c5b9126b0315182fc23fd"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/remote/ApiKeyStore.kt",
+      "sha256": "b1988279bfee078ef04cb1bc722914ec982614d81f70802d40d067e441fa1c3f"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/remote/LocalSiteOperations.kt",
+      "sha256": "98e981831e14fa5896d7fa23aaab575f7dbff34a42cd5c42d3262f0ee1533869"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/remote/RemoteApiServer.kt",
+      "sha256": "5442f4497d6b4d4892d4a3b7146f855f7888aea877fbf43440dd46d671eff63c"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/remote/RemoteServerRuntime.kt",
+      "sha256": "5d795d30d9aff9c6dad772c70288b5ba7ce8cc02ce39dc481944b363270d71e9"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/remote/RemoteSiteOperations.kt",
+      "sha256": "a5ed069a01b618ed5a9506ddcb492925476268049372fdfc8b2ce4acd520c5ea"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/repository/PlatformRepository.kt",
+      "sha256": "b8a736d4e1e950bddd363c534823e67bab78a5cf06a1d7a6c3a71d2d8e529147"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/repository/ServerStateRepository.kt",
+      "sha256": "f99df7b35a27450e8b0fffff27b6fa57f4f4190afce88e818413e458fd85b704"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/repository/SiteRepository.kt",
+      "sha256": "ac8ca26241c844b91c6f589f1f04f52a88169b7e860f4ab6d070906556931e95"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/runtime/RuntimeRecovery.kt",
+      "sha256": "3bf377ee0cdbcb041f7c8a27b17d15cddf5de970c20c1c3b9f72f277bbbda4fb"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/setup/ForegroundStartGate.kt",
+      "sha256": "ece3bb1b36630e59c04d9902a5f6c716008e0cb1a7b0bb6aa6d6834effd51d7a"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/setup/SetupPreferences.kt",
+      "sha256": "b0118802563746347b1922329144686b51ae3f14bea1851a4d1acdf3e22d40dc"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/setup/SetupVerifier.kt",
+      "sha256": "c2d2c66911a99f3e6332a8bd7f9e4584920e5f970e3c8223566fce11d8b12fd8"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/setup/TermuxPermissionStatus.kt",
+      "sha256": "de9ba90c4d049df247107b78ac3175107bfbca29e5e0e6bfd22aaaf976a7c524"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/setup/TermuxSetupInstructions.kt",
+      "sha256": "c77648ca4d6b3eb39c9e66d29e912e9edb5dd4eb099f3d697ef1dc842fbbd307"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/system/RuntimeDeploymentScriptSource.kt",
+      "sha256": "82eddd2d5316296582770519b615590049b96aba345c96be909451915c17e8af"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/system/RuntimeFileStore.kt",
+      "sha256": "194a651e37dc21eeee802ceab536abc4cd397386e64eb99f75df101583ecd251"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/system/RuntimeScriptSource.kt",
+      "sha256": "776e6ae3211b845e3346e293e9050659e28a0653a6486bbfaf974dc6809b9898"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/system/SystemManager.kt",
+      "sha256": "d79ff8f22be507b41534bdcb51ab9b91edb9edd42b37114578b5bcadb46fabe5"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/domain/usecase/InitializePlatform.kt",
+      "sha256": "19d536ca727ef3d3b0ba8b103551460f8a6df30f69de5b29c3a0f969442f0770"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/MainActivity.kt",
+      "sha256": "f24e8e74695ef6198eb41821fb61873924c9587901232e6394243f0ed41fa944"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/presentation/bootstrap/BootstrapScreen.kt",
+      "sha256": "feded3db30c75d9eba24efe074710f18077383b1128cf371837fa13d01fe1fcb"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/presentation/bootstrap/BootstrapViewModel.kt",
+      "sha256": "0cc79deadb13db382d18f46c68ace057851eaf974129dd11c36a49cd4e7f0a13"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/presentation/dashboard/DashboardScreen.kt",
+      "sha256": "fe17a557bbdb14b3072bcf1b372c81412f2da0e55670efa2f7e7d7ed9d0a6b8d"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/presentation/dashboard/DashboardUiState.kt",
+      "sha256": "64b9aac34ec2ce7b13e60f3307f8251bfd69978fcc73ad1b7d7d8a70bd8c8eea"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/presentation/dashboard/MainViewModel.kt",
+      "sha256": "ad90f2d78a4511c3dccda645cfa870f2eef41094042d3d20d8089f73b88b84d9"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/presentation/setup/SetupScreen.kt",
+      "sha256": "4f1ae80f059f1ce306be854fdfa9b95f04d35507a71c9490e3227668015816a7"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/presentation/setup/SetupViewModel.kt",
+      "sha256": "b344d488a76a51e89bb64e897cfaf4685944ff5646d0de7df57b115c47d113e3"
+    },
+    {
+      "path": "app/src/main/java/dev/pocketpaas/presentation/theme/PocketPaaSTheme.kt",
+      "sha256": "efb554478b6f415384eaa19d45cfead5f007f85538db9f56ca47c5e32081cd59"
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_pocket_paas.xml",
+      "sha256": "a39dba55115d0a397bd1561e69f4ce763fa345983671a181f63facf0953fa5b6"
+    },
+    {
+      "path": "app/src/main/res/values/strings.xml",
+      "sha256": "3b9de95695bb59241539a83769958c4c6483b92a2f542fcc82a1ab9c7ac70e7e"
+    },
+    {
+      "path": "app/src/main/res/values/themes.xml",
+      "sha256": "8d0ae55eaaca69736ca13bc16b91c1f9294cb0a24be208f961f9768907f5a741"
+    },
+    {
+      "path": "app/src/main/res/values-night/themes.xml",
+      "sha256": "f9684a7fb5499b55e5bbe51a1111c14bb078120f87f62c67c6deffb45b4c613b"
+    },
+    {
+      "path": "app/src/main/res/xml/data_extraction_rules.xml",
+      "sha256": "e14ee526198a32bb3954c21a3d5e587a210a62817bc5268dc70515e237c14d61"
+    },
+    {
+      "path": "app/src/main/res/xml/network_security_config.xml",
+      "sha256": "9187f485f22fde712aea8de5243664710440a9ee08e9f1b172978eef96a15001"
+    }
+  ],
+  "hostShellTool": {
+    "source": "https://frippery.org/files/busybox/busybox64.exe",
+    "sha256": "07bb1e5b095b00d68a695481f9240879f33c5724b40aa2308f999d54ed78f075"
+  },
+  "limitations": [
+    "Actual Android 12/Play Store and F-Droid Termux onboarding, package installation and device UI tests not executed.",
+    "The installed Termux distribution must expose RUN_COMMAND and RunCommandService; unsupported versions are detected and explained.",
+    "No release shrinking/signing validation; debug APK only.",
+    "First setup still requires installing Termux and pasting its command once.",
+    "No actual pkg repository install in the native shell fixtures; no host packages installed."
+  ]
+}
