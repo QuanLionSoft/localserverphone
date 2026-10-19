@@ -27,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import dev.pocketpaas.data.remote.android.RemoteServerService
 import dev.pocketpaas.presentation.dashboard.DashboardScreen
 import dev.pocketpaas.presentation.dashboard.MainViewModel
 import dev.pocketpaas.presentation.theme.PocketPaaSTheme
@@ -187,6 +188,39 @@ class MainActivity : ComponentActivity() {
                     onCopyApiKey = viewModel::copyApiKey,
                     onNoticeConsumed = viewModel::consumeNotice,
                     onOpenSetup = { startGate.cancel(); setupViewModel.cancelCheck(); setupViewModel.refreshPermission(); showSetupOverride = true },
+                    onSshToggle = viewModel::toggleSsh,
+                    onSshPortChanged = viewModel::setSshPort,
+                    onSshPasswordAuthChanged = viewModel::setSshPasswordAuth,
+                    onSshLanChanged = viewModel::setSshLan,
+                    onShowSshSheet = viewModel::showSshSheet,
+                    onDismissSshSheet = viewModel::dismissSshSheet,
+                    onSshKeyNameChanged = viewModel::setSshKeyName,
+                    onSshPublicKeyChanged = viewModel::setSshPublicKey,
+                    onAddSshKey = viewModel::addSshKey,
+                    onRemoveSshKey = viewModel::removeSshKey,
+                    onInstallService = viewModel::installService,
+                    onStartService = viewModel::startService,
+                    onStopService = viewModel::stopService,
+                    onActivitySearchQueryChanged = viewModel::setActivitySearchQuery,
+                    onActivityLevelFilterChanged = viewModel::setActivityLevelFilter,
+                    onActivityCategoryFilterChanged = viewModel::setActivityCategoryFilter,
+                    onClearActivityFilters = viewModel::clearActivityFilters,
+                    onExportLogs = viewModel::exportLogs,
+                    onClearActivityLogs = viewModel::clearActivityLogs,
+                    onShowBackupSheet = viewModel::showBackupSheet,
+                    onDismissBackupSheet = viewModel::dismissBackupSheet,
+                    onBackupImportJsonChanged = viewModel::setBackupImportJson,
+                    onBackupRequireSignatureChanged = viewModel::setBackupRequireSignature,
+                    onExportBackup = viewModel::exportBackup,
+                    onImportBackup = viewModel::importBackup,
+                    onSelectTab = viewModel::selectTab,
+                    onForceStopAll = {
+                        startGate.cancel()
+                        pendingNotificationTicket = null
+                        setupViewModel.cancelCheck()
+                        viewModel.forceStopAll()
+                        runCatching { stopService(Intent(this@MainActivity, RemoteServerService::class.java)) }
+                    },
                 )
             }
         }

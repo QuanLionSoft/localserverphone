@@ -16,4 +16,6 @@ interface RemoteServerRuntime {
     /** Starts Nginx and the tunnel only while an existing foreground session admits work. */
     suspend fun startNetwork()
     suspend fun stop()
+    /** Cancels in-flight work and resets to STOPPED without triggering cold Termux recovery. */
+    suspend fun forceReset() {}
 }

@@ -1,0 +1,110 @@
+name: PocketPaaS Verification & APK Build
+
+on:
+  push:
+    branches: [ main, "arena/**" ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  schema-and-policy-checks:
+    name: SQLite Schema v4 & Policy Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify Room v4 SQLite migration chain
+        run: python3 verification/database/test_schema_v4.py
+      - name: Verify SSH and Service policy invariants
+        run: python3 verification/database/test_policies.py
+      - name: Verify Backup HMAC, CSV formula guard and Remote API contracts
+        run: python3 verification/database/test_backup_and_logs.py
+
+  room-jvm-and-apk-build:
+    name: Room JVM Tests & Debug APK Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Run Room JVM KSP & Unit Tests
+        id: room_jvm
+        continue-on-error: true
+        run: |
+          chmod +x ./gradlew
+          set -o pipefail
+          ./gradlew -p verification/room-jvm test 2>&1 | tee room-jvm.log
+      - name: Install Android SDK Platform 36 & Build Tools 35.0.0
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;35.0.0"
+      - name: Run Android Unit Tests, Lint & Assemble Debug APK
+        id: android_build
+        continue-on-error: true
+        run: |
+          chmod +x ./gradlew
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug 2>&1 | tee android-build.log
+      - name: Report Build Diagnostics to PR
+        if: always() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "### CI Build & Test Report (\`${GITHUB_SHA::7}\`)"
+            echo "- Room-JVM outcome: **${{ steps.room_jvm.outcome }}**"
+            echo "- Android APK build outcome: **${{ steps.android_build.outcome }}**"
+            if [ -f room-jvm.log ]; then
+              echo "#### Room-JVM Compiler/Test Messages"
+              echo '```text'
+              grep -E "^e:|^w:|FAILURE:|FAILED|> Task|Exception|Error" room-jvm.log | tail -n 80 || true
+              echo "--- tail ---"
+              tail -n 40 room-jvm.log
+              echo '```'
+            fi
+            if [ -f android-build.log ]; then
+              echo "#### Android Build Compiler/Test/Lint Messages"
+              echo '```text'
+              grep -E "^e:|^w:|FAILURE:|FAILED|> Task|Exception|Error" android-build.log | tail -n 100 || true
+              echo "--- tail ---"
+              tail -n 40 android-build.log
+              echo '```'
+            fi
+          } > report.md
+          gh api repos/${GITHUB_REPOSITORY}/issues/1/comments -f body="$(cat report.md)" || true
+      - name: Publish Debug APK Tag Blob & Release
+        if: steps.android_build.outcome == 'success' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$APK_PATH" ]; then
+            cp "$APK_PATH" PocketPaaS-0.5.0-debug.apk
+            BLOB_SHA=$(git hash-object -w "$APK_PATH")
+            git tag -f apk-0.5.0-debug "$BLOB_SHA"
+            git push -f origin refs/tags/apk-0.5.0-debug
+            gh release delete v0.5.0-debug --yes || true
+            gh release create v0.5.0-debug PocketPaaS-0.5.0-debug.apk \
+              --title "Pocket PaaS 0.5.0-debug" \
+              --notes "Room v4, SSH yönetimi, PostgreSQL/Redis/MariaDB servisleri, imzalı yedekleme ve log arşivleme içeren debug APK." || true
+          fi
+      - name: Enforce Build Success
+        run: |
+          if [ "${{ steps.room_jvm.outcome }}" != "success" ] || [ "${{ steps.android_build.outcome }}" != "success" ]; then
+            exit 1
+          fi

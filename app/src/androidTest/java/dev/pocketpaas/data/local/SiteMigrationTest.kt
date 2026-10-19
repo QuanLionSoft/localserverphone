@@ -39,12 +39,13 @@ class SiteMigrationTest {
 
         helper.runMigrationsAndValidate(
             databaseName,
-            3,
+            4,
             true,
             DatabaseMigrations.MIGRATION_1_2,
             DatabaseMigrations.MIGRATION_2_3,
+            DatabaseMigrations.MIGRATION_3_4,
         ).use { database ->
-            assertEquals(3, database.version)
+            assertEquals(4, database.version)
             database.query(
                 "SELECT id, installationId, createdAtEpochMillis, publicUrl FROM platform_settings ORDER BY id",
             ).use { cursor ->

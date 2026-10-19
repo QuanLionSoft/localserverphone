@@ -2,12 +2,17 @@ package dev.pocketpaas.data.remote
 
 import dev.pocketpaas.core.config.RemoteApiPolicy
 import dev.pocketpaas.core.config.ServerConfig
+import dev.pocketpaas.domain.backup.PlatformBackupManager
 import dev.pocketpaas.domain.remote.ApiKeyStore
 import dev.pocketpaas.domain.remote.RemoteApiServer
 import dev.pocketpaas.domain.remote.RemoteApiServerFactory
 import dev.pocketpaas.domain.remote.RemoteSiteOperations
 import dev.pocketpaas.domain.remote.RemoteUploadStorage
+import dev.pocketpaas.domain.repository.ActivityRepository
+import dev.pocketpaas.domain.repository.DeploymentHistoryRepository
 import dev.pocketpaas.domain.repository.SiteRepository
+import dev.pocketpaas.domain.services.ManagedServices
+import dev.pocketpaas.domain.ssh.SshManager
 import io.ktor.server.engine.ApplicationEngineFactory
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
@@ -18,7 +23,6 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.util.concurrent.atomic.AtomicInteger
-import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -29,13 +33,20 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 @Singleton
-class NettyRemoteApiServerFactory @Inject constructor(
+class NettyRemoteApiServerFactory(
     private val engineFactory: ApplicationEngineFactory<NettyApplicationEngine, NettyApplicationEngine.Configuration>,
     private val config: ServerConfig,
     private val policy: RemoteApiPolicy,
     private val keys: ApiKeyStore,
     private val sites: SiteRepository,
     private val storage: RemoteUploadStorage,
+    private val ssh: SshManager? = null,
+    private val services: ManagedServices? = null,
+    private val activity: ActivityRepository? = null,
+    private val deployments: DeploymentHistoryRepository? = null,
+    private val backup: PlatformBackupManager? = null,
+    private val sshProvider: () -> SshManager? = { ssh },
+    private val servicesProvider: () -> ManagedServices? = { services },
 ) : RemoteApiServerFactory {
     override fun create(bindHost: String, operations: RemoteSiteOperations): RemoteApiServer {
         require(bindHost == "127.0.0.1" || bindHost == "0.0.0.0")
@@ -76,7 +87,20 @@ class NettyRemoteApiServerFactory @Inject constructor(
                         ))
                     }
                 }) {
-                    installRemoteApi(RemoteApiDependencies(sites, operations, keys, storage.directory, policy))
+                    installRemoteApi(
+                        RemoteApiDependencies(
+                            sites = sites,
+                            operations = operations,
+                            keys = keys,
+                            uploadDirectory = storage.directory,
+                            policy = policy,
+                            ssh = sshProvider(),
+                            services = servicesProvider(),
+                            activity = activity,
+                            deployments = deployments,
+                            backup = backup,
+                        ),
+                    )
                 }
                 owned = created
                 try {

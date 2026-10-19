@@ -142,6 +142,19 @@ class RemoteServerRuntimeManagerTest {
     }
 
     @Test
+    fun forceResetClearsFailedStateWithoutSpinningTermuxRecovery() = runTest {
+        val fixture = Fixture()
+        fixture.recoveryFailures = 5
+        assertKind(RemoteErrorKind.FAILED) { fixture.runtime.start("127.0.0.1") }
+        assertEquals(RemoteServerStatus.FAILED, fixture.runtime.state.value.status)
+        assertEquals(1, fixture.recoveries)
+        fixture.runtime.forceReset()
+        assertEquals(1, fixture.recoveries)
+        assertEquals(RemoteServerStatus.STOPPED, fixture.runtime.state.value.status)
+        assertNull(fixture.runtime.state.value.error)
+    }
+
+    @Test
     fun failedNetworkShutdownKeepsFailedUntilRetry() = runTest {
         val fixture = Fixture()
         fixture.runtime.start("127.0.0.1")

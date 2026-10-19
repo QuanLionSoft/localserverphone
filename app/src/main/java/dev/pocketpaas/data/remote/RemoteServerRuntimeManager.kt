@@ -52,71 +52,107 @@ class RemoteServerRuntimeManager @Inject constructor(
     private val operationLock = Any()
     private val operations = mutableSetOf<Job>()
     private var activeOperationJob: Job? = null
+    private var lifecycleJob: Job? = null
     private val mutableState = MutableStateFlow(RemoteServerState())
     override val state: StateFlow<RemoteServerState> = mutableState.asStateFlow()
     private var server: RemoteApiServer? = null
     private var recovered = false
 
     override suspend fun start(bindHost: String) = lifecycle.withLock {
-        require(bindHost == "127.0.0.1" || bindHost == "0.0.0.0") { "Unsupported API binding." }
-        if (state.value.status == RemoteServerStatus.RUNNING) {
-            if (state.value.bindHost != bindHost) fail(RemoteErrorKind.CONFLICT)
-            return@withLock
-        }
-        if (state.value.status != RemoteServerStatus.STOPPED || server != null) fail(RemoteErrorKind.CONFLICT)
-        mutableState.value = RemoteServerState(RemoteServerStatus.STARTING, bindHost)
+        val currentJob = currentCoroutineContext().job
+        synchronized(operationLock) { lifecycleJob = currentJob }
         try {
-            recoverIfNeeded()
-            check(keys.token().matches(Regex("[0-9a-f]{64}"))) { "Invalid remote API key." }
-            val created = factory.create(bindHost, this)
-            server = created
-            created.start()
-            currentCoroutineContext().ensureActive()
-            mutableState.value = RemoteServerState(RemoteServerStatus.RUNNING, bindHost)
-        } catch (failure: Throwable) {
-            withContext(NonCancellable) {
-                val httpFailed = shutdownHttp()
-                val childrenFailed = shutdownChildren()
-                val incomplete = httpFailed || childrenFailed
-                mutableState.value = RemoteServerState(
-                    status = if (failure is CancellationException && !incomplete) RemoteServerStatus.STOPPED else RemoteServerStatus.FAILED,
-                    bindHost = bindHost.takeIf { incomplete },
-                    error = if (incomplete) INCOMPLETE_SHUTDOWN else if (failure !is CancellationException) START_FAILED else null,
-                )
+            require(bindHost == "127.0.0.1" || bindHost == "0.0.0.0") { "Unsupported API binding." }
+            if (state.value.status == RemoteServerStatus.RUNNING) {
+                if (state.value.bindHost != bindHost) fail(RemoteErrorKind.CONFLICT)
+                return@withLock
             }
-            if (failure is CancellationException) throw failure
-            if (failure !is Exception) throw failure
-            fail(RemoteErrorKind.FAILED)
+            if (state.value.status != RemoteServerStatus.STOPPED || server != null) fail(RemoteErrorKind.CONFLICT)
+            mutableState.value = RemoteServerState(RemoteServerStatus.STARTING, bindHost)
+            try {
+                recoverIfNeeded()
+                check(keys.token().matches(Regex("[0-9a-f]{64}"))) { "Invalid remote API key." }
+                val created = factory.create(bindHost, this)
+                server = created
+                created.start()
+                currentCoroutineContext().ensureActive()
+                mutableState.value = RemoteServerState(RemoteServerStatus.RUNNING, bindHost)
+            } catch (failure: Throwable) {
+                withContext(NonCancellable) {
+                    val httpFailed = shutdownHttp()
+                    val childrenFailed = shutdownChildren()
+                    val incomplete = httpFailed || childrenFailed
+                    mutableState.value = RemoteServerState(
+                        status = if (failure is CancellationException && !incomplete) RemoteServerStatus.STOPPED else RemoteServerStatus.FAILED,
+                        bindHost = bindHost.takeIf { incomplete },
+                        error = if (incomplete) INCOMPLETE_SHUTDOWN else if (failure !is CancellationException) START_FAILED else null,
+                    )
+                }
+                if (failure is CancellationException) throw failure
+                if (failure !is Exception) throw failure
+                fail(RemoteErrorKind.FAILED)
+            }
+        } finally {
+            synchronized(operationLock) {
+                if (lifecycleJob === currentJob) lifecycleJob = null
+            }
         }
     }
 
     override suspend fun stop() = lifecycle.withLock {
-        if (state.value.status == RemoteServerStatus.STOPPED && server == null) return@withLock
-        val bindHost = state.value.bindHost
-        val pending = synchronized(operationLock) {
-            mutableState.value = RemoteServerState(RemoteServerStatus.STOPPING, bindHost)
-            (listOfNotNull(activeOperationJob) + operations).distinct()
+        val currentJob = currentCoroutineContext().job
+        synchronized(operationLock) { lifecycleJob = currentJob }
+        try {
+            if (state.value.status == RemoteServerStatus.STOPPED && server == null) return@withLock
+            val bindHost = state.value.bindHost
+            val pending = synchronized(operationLock) {
+                mutableState.value = RemoteServerState(RemoteServerStatus.STOPPING, bindHost)
+                (listOfNotNull(activeOperationJob) + operations).distinct()
+            }
+            pending.forEach { it.cancel(CancellationException("The remote server is stopping.")) }
+            withContext(NonCancellable) {
+                // Cancel handlers before stopping Netty. Waiting for the mutation mutex first could
+                // leave the HTTP shutdown waiting for a handler whose deployment is still running.
+                val httpFailed = shutdownHttp()
+                val childrenFailed = mutations.withLock children@ {
+                    if (!recovered) {
+                        try {
+                            recoverIfNeeded()
+                        } catch (_: Exception) {
+                            return@children true
+                        }
+                    }
+                    shutdownChildren()
+                }
+                if (httpFailed || childrenFailed) {
+                    mutableState.value = RemoteServerState(RemoteServerStatus.FAILED, bindHost, INCOMPLETE_SHUTDOWN)
+                    fail(RemoteErrorKind.FAILED)
+                }
+                mutableState.value = RemoteServerState()
+            }
+        } finally {
+            synchronized(operationLock) {
+                if (lifecycleJob === currentJob) lifecycleJob = null
+            }
         }
-        pending.forEach { it.cancel(CancellationException("The remote server is stopping.")) }
-        withContext(NonCancellable) {
-            // Cancel handlers before stopping Netty. Waiting for the mutation mutex first could
-            // leave the HTTP shutdown waiting for a handler whose deployment is still running.
-            val httpFailed = shutdownHttp()
-            val childrenFailed = mutations.withLock children@ {
-                if (!recovered) {
-                    try {
-                        recoverIfNeeded()
-                    } catch (_: Exception) {
-                        return@children true
+    }
+
+    override suspend fun forceReset() {
+        val pending = synchronized(operationLock) {
+            (listOfNotNull(lifecycleJob, activeOperationJob) + operations).distinct()
+        }
+        pending.forEach { it.cancel(CancellationException("Force reset requested.")) }
+        lifecycle.withLock {
+            withContext(NonCancellable) {
+                runCatching { shutdownHttp() }
+                server = null
+                mutations.withLock {
+                    if (recovered) {
+                        runCatching { shutdownChildren() }
                     }
                 }
-                shutdownChildren()
+                mutableState.value = RemoteServerState()
             }
-            if (httpFailed || childrenFailed) {
-                mutableState.value = RemoteServerState(RemoteServerStatus.FAILED, bindHost, INCOMPLETE_SHUTDOWN)
-                fail(RemoteErrorKind.FAILED)
-            }
-            mutableState.value = RemoteServerState()
         }
     }
 
