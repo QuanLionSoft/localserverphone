@@ -1,10 +1,15 @@
-name: PocketPaaS Verification & Unit Tests
+name: PocketPaaS Verification & APK Build
 
 on:
   push:
     branches: [ main, "arena/**" ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   schema-and-policy-checks:
@@ -23,11 +28,13 @@ jobs:
       - name: Verify Backup HMAC, CSV formula guard and Remote API contracts
         run: python3 verification/database/test_backup_and_logs.py
 
-  room-jvm-and-unit-tests:
-    name: Room JVM & Ktor Unit Tests
+  room-jvm-and-apk-build:
+    name: Room JVM Tests & Debug APK Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -36,5 +43,51 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Run Room JVM KSP & Unit Tests
-        working-directory: verification/room-jvm
-        run: gradle test --info
+        run: |
+          set -o pipefail
+          ./gradlew -p verification/room-jvm test --stacktrace 2>&1 | tee room-jvm.log
+      - name: Install Android SDK Platform 36 & Build Tools 35.0.0
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;35.0.0"
+      - name: Run Android Unit Tests, Lint & Assemble Debug APK
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace 2>&1 | tee android-build.log
+      - name: Publish Debug APK Tag Blob & Release
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$APK_PATH" ]; then
+            cp "$APK_PATH" PocketPaaS-0.5.0-debug.apk
+            BLOB_SHA=$(git hash-object -w "$APK_PATH")
+            git tag -f apk-0.5.0-debug "$BLOB_SHA"
+            git push -f origin refs/tags/apk-0.5.0-debug
+            gh release delete v0.5.0-debug --yes || true
+            gh release create v0.5.0-debug PocketPaaS-0.5.0-debug.apk \
+              --title "Pocket PaaS 0.5.0-debug" \
+              --notes "Room v4, SSH yönetimi, PostgreSQL/Redis/MariaDB servisleri, imzalı yedekleme ve log arşivleme içeren debug APK." || true
+          fi
+      - name: Report Build Diagnostics to PR
+        if: always() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "### CI Build & Test Report (\`${GITHUB_SHA::7}\`)"
+            if [ -f room-jvm.log ]; then
+              echo "#### Room-JVM Output (tail)"
+              echo '```text'
+              tail -n 60 room-jvm.log
+              echo '```'
+            fi
+            if [ -f android-build.log ]; then
+              echo "#### Android Build Output (tail)"
+              echo '```text'
+              tail -n 80 android-build.log
+              echo '```'
+            fi
+          } > report.md
+          gh api repos/${GITHUB_REPOSITORY}/issues/1/comments -f body="$(cat report.md)" || true

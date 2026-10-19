@@ -5,7 +5,6 @@ import dev.pocketpaas.data.local.ServiceStateDao
 import dev.pocketpaas.data.local.ServiceStateEntity
 import dev.pocketpaas.data.local.SshAuthorizedKeyEntity
 import dev.pocketpaas.data.local.SshDao
-import dev.pocketpaas.data.local.SshSettingsEntity
 import dev.pocketpaas.data.local.toDomain
 import dev.pocketpaas.data.local.toEntity
 import dev.pocketpaas.domain.backup.BackupCodec

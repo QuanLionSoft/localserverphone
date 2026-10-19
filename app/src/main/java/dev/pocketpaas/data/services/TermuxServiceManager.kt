@@ -164,7 +164,7 @@ class TermuxServiceManager(
             var stopFailure: String? = null
             if (process != null) {
                 try {
-                    process.stop(policy.stopGraceMillis)
+                    process.stop()
                 } catch (failure: Exception) {
                     if (failure is CancellationException) throw failure
                     stopFailure = description(failure)
@@ -242,7 +242,7 @@ class TermuxServiceManager(
             true
         }
         if (ready != true) {
-            runCatching { process.stop(policy.stopGraceMillis) }
+            runCatching { process.stop() }
             handles.remove(definition.serviceKey)
             watchers.remove(definition.serviceKey)?.cancel()
             throw IOException("${definition.displayName} :$port üzerinde hazır olmadı; süreç günlüklerini kontrol edin.")
@@ -305,7 +305,7 @@ class TermuxServiceManager(
             val process = handles.remove(serviceKey)
             watchers.remove(serviceKey)?.cancel()
             if (process != null) {
-                runCatching { process.stop(policy.stopGraceMillis) }
+                runCatching { process.stop() }
             }
             persist(
                 definition,

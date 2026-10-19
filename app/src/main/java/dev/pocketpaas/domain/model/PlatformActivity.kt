@@ -1,6 +1,6 @@
 package dev.pocketpaas.domain.model
 
-enum class ActivityCategory { SYSTEM, NETWORK, DEPLOYMENT, SERVICE, SSH, SECURITY, SITE }
+enum class ActivityCategory { SYSTEM, NETWORK, DEPLOYMENT, SERVICE, DATABASE, SSH, SECURITY, SITE }
 
 enum class ActivityLevel { INFO, WARNING, ERROR }
 

@@ -5,11 +5,15 @@ import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import dev.pocketpaas.data.local.PocketPaaSDatabase
-import dev.pocketpaas.data.local.PlatformSettingsEntity
+import dev.pocketpaas.data.local.PlatformFeatureSchemas
 import dev.pocketpaas.data.local.SiteDao
 import dev.pocketpaas.data.local.SiteEntity
 import dev.pocketpaas.data.local.SiteSchema
 import dev.pocketpaas.data.local.ServerStateSchema
+import dev.pocketpaas.data.local.SshAuthorizedKeyEntity
+import dev.pocketpaas.data.local.SshSettingsEntity
+import dev.pocketpaas.domain.model.ActivityCategory
+import dev.pocketpaas.domain.model.ActivityLevel
 import dev.pocketpaas.domain.model.ProjectType
 import dev.pocketpaas.domain.model.SiteStatus
 import java.io.File
@@ -165,7 +169,7 @@ class RoomSqlVerificationTest {
         val database = Room.databaseBuilder<PocketPaaSDatabase>(file.absolutePath)
             .setDriver(driver)
             .setQueryCoroutineContext(Dispatchers.IO)
-            .addMigrations(migration, publicUrlMigration())
+            .addMigrations(migration, publicUrlMigration(), featureSchemaMigration())
             .build()
         databases += database
 
@@ -192,7 +196,7 @@ class RoomSqlVerificationTest {
         } finally { old.close() }
         val database = Room.databaseBuilder<PocketPaaSDatabase>(file.absolutePath)
             .setDriver(driver).setQueryCoroutineContext(Dispatchers.IO)
-            .addMigrations(publicUrlMigration()).build().also(databases::add)
+            .addMigrations(publicUrlMigration(), featureSchemaMigration()).build().also(databases::add)
         assertEquals("v2-id", database.platformSettingsDao().getSettings()?.installationId)
         assertEquals(77L, database.platformSettingsDao().getSettings()?.createdAtEpochMillis)
         assertNull(database.platformSettingsDao().observePublicUrl().first())
@@ -202,10 +206,34 @@ class RoomSqlVerificationTest {
         assertEquals("https://gateway.trycloudflare.com", database.platformSettingsDao().observePublicUrl().first())
         assertEquals(1, database.platformSettingsDao().updatePublicUrl(null))
         assertNull(database.platformSettingsDao().getSettings()?.publicUrl)
+
+        // Verify v4 tables work after migration
+        val settings = database.sshDao().getOrCreateSettings(SshSettingsEntity(port = 8022, updatedAt = 100L))
+        assertEquals(8022, settings.port)
+        val keyId = database.sshDao().insertAuthorizedKey(
+            SshAuthorizedKeyEntity(name = "laptop", publicKey = "ssh-ed25519 AAAA", fingerprint = "SHA256:test1", createdAt = 100L),
+        )
+        assertTrue(keyId > 0)
+        val eventId = database.activityEventDao().record(
+            category = ActivityCategory.SSH,
+            level = ActivityLevel.INFO,
+            message = "SSH key added",
+            detail = null,
+            timestamp = 200L,
+            keep = 10,
+        )
+        assertTrue(eventId > 0)
+        assertEquals(1, database.activityEventDao().recent(10).size)
     }
 
     private fun publicUrlMigration(): Migration = object : Migration(2, 3) {
         override fun migrate(connection: SQLiteConnection) { connection.execute(ServerStateSchema.addPublicUrl) }
+    }
+
+    private fun featureSchemaMigration(): Migration = object : Migration(3, 4) {
+        override fun migrate(connection: SQLiteConnection) {
+            PlatformFeatureSchemas.statements.forEach { sql -> connection.execute(sql) }
+        }
     }
 
     private fun newDatabase(): PocketPaaSDatabase =

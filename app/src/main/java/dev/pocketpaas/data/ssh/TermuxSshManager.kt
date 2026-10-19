@@ -272,7 +272,7 @@ class TermuxSshManager(
         var stopFailure: String? = null
         if (owned != null) {
             try {
-                owned.stop(policy.stopGraceMillis)
+                owned.stop()
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 stopFailure = description(failure)
