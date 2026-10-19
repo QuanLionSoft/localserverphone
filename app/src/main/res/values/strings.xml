@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pocket PaaS</string>
+    <string name="phase_one_description">Faz 1 • Android uygulama temeli</string>
+    <string name="bootstrap_ready">Altyapı hazır</string>
+    <string name="database_ready">Hilt ve Room başlatıldı. Çalışma dizinleri oluşturuldu.</string>
+    <string name="ports">API: %1$d • Nginx: %2$d</string>
+    <string name="termux_status">Termux: %1$s</string>
+    <string name="command_permission_status">Komut izni: %1$s</string>
+    <string name="installation_id">Kurulum kimliği: %1$s</string>
+    <string name="installed">Yüklü</string>
+    <string name="not_installed">Yüklü değil</string>
+    <string name="granted">Verilmiş</string>
+    <string name="not_granted">Verilmemiş</string>
+    <string name="runtime_requirement">Sunucu çalıştırmak için uyumlu bir çalışma ortamı gerekir. Termux bağlantısı, sunucu yönetimi ve dağıtım özellikleri sonraki fazlarda eklenecek.</string>
+    <string name="bootstrap_failed">Uygulama altyapısı başlatılamadı. Depolama alanını kontrol edip yeniden deneyin.</string>
+    <string name="retry">Yeniden dene</string>
+    <string name="refresh">Durumu yenile</string>
+</resources>
