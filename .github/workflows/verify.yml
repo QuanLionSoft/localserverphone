@@ -44,6 +44,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Run Room JVM KSP & Unit Tests
         run: |
+          chmod +x ./gradlew
           set -o pipefail
           ./gradlew -p verification/room-jvm test --stacktrace 2>&1 | tee room-jvm.log
       - name: Install Android SDK Platform 36 & Build Tools 35.0.0
@@ -52,6 +53,7 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;35.0.0"
       - name: Run Android Unit Tests, Lint & Assemble Debug APK
         run: |
+          chmod +x ./gradlew
           set -o pipefail
           ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace 2>&1 | tee android-build.log
       - name: Publish Debug APK Tag Blob & Release
