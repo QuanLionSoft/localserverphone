@@ -46,7 +46,7 @@ class RemoteApiContractTest(unittest.TestCase):
 
     def test_netty_factory_wires_new_dependencies(self):
         text = read("data/remote/NettyRemoteApiServerFactory.kt")
-        for field in ("ssh = ssh", "services = services", "activity = activity", "deployments = deployments", "backup = backup"):
+        for field in ("ssh = sshProvider()", "services = servicesProvider()", "activity = activity", "deployments = deployments", "backup = backup"):
             self.assertIn(field, text)
 
 

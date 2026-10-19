@@ -45,6 +45,8 @@ class NettyRemoteApiServerFactory(
     private val activity: ActivityRepository? = null,
     private val deployments: DeploymentHistoryRepository? = null,
     private val backup: PlatformBackupManager? = null,
+    private val sshProvider: () -> SshManager? = { ssh },
+    private val servicesProvider: () -> ManagedServices? = { services },
 ) : RemoteApiServerFactory {
     override fun create(bindHost: String, operations: RemoteSiteOperations): RemoteApiServer {
         require(bindHost == "127.0.0.1" || bindHost == "0.0.0.0")
@@ -92,8 +94,8 @@ class NettyRemoteApiServerFactory(
                             keys = keys,
                             uploadDirectory = storage.directory,
                             policy = policy,
-                            ssh = ssh,
-                            services = services,
+                            ssh = sshProvider(),
+                            services = servicesProvider(),
                             activity = activity,
                             deployments = deployments,
                             backup = backup,

@@ -150,8 +150,8 @@ object AppModule {
         keys: ApiKeyStore,
         sites: SiteRepository,
         storage: RemoteUploadStorage,
-        ssh: dev.pocketpaas.domain.ssh.SshManager,
-        services: dev.pocketpaas.domain.services.ManagedServices,
+        ssh: javax.inject.Provider<dev.pocketpaas.domain.ssh.SshManager>,
+        services: javax.inject.Provider<dev.pocketpaas.domain.services.ManagedServices>,
         activity: dev.pocketpaas.domain.repository.ActivityRepository,
         deployments: dev.pocketpaas.domain.repository.DeploymentHistoryRepository,
         backup: PlatformBackupManager,
@@ -162,11 +162,11 @@ object AppModule {
         keys = keys,
         sites = sites,
         storage = storage,
-        ssh = ssh,
-        services = services,
         activity = activity,
         deployments = deployments,
         backup = backup,
+        sshProvider = ssh::get,
+        servicesProvider = services::get,
     )
 
     @Provides
