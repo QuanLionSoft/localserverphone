@@ -1,6 +1,6 @@
 # Pocket PaaS — Telefonda adım adım kurulum
 
-Bu rehber **0.4.0-debug** sürümü içindir. [Yeni APK'yı indirin](../PocketPaaS-SurecDuzeltmesi-debug.apk). Telefon üzerinde kurulur; bilgisayar, USB, ADB veya root gerekmez. Android 8.0 ve üzeri, internet ve uyumlu Termux gerekir. APK'yı kurup açın; ekranın sağ üstünde **0.4.0-debug** yazdığını kontrol edin. Eski sürümü kullanıyorsanız yeni APK'yı mevcut Pocket PaaS'ın üzerine güncelleyin; kurulum için uygulama verilerini silmeyin.
+Bu rehber **0.5.0-debug** sürümü içindir. [Yeni APK'yı indirin](../PocketPaaS-SurecDuzeltmesi-debug.apk). Telefon üzerinde kurulur; bilgisayar, USB, ADB veya root gerekmez. Android 8.0 ve üzeri, internet ve uyumlu Termux gerekir. APK'yı kurup açın; ekranın sağ üstünde **0.5.0** yazdığını kontrol edin. Eski sürümü kullanıyorsanız yeni APK'yı mevcut Pocket PaaS'ın üzerine güncelleyin; kurulum için uygulama verilerini silmeyin (Room v3 → v4 migration mevcut verilerinizi korur).
 
 Kurulum dört ayrı sayfadır: **1 · Termux → 2 · İzin → 3 · Araçlar → 4 · Kontrol**. Üstteki adlara dokunabilir veya alttaki **Geri / İleri** düğmelerini kullanabilirsiniz. İleri düğmesi yalnız sayfayı değiştirir. Aşağıdaki adımlar bitmeden sunucu kendiliğinden başlamaz.
 
@@ -69,4 +69,19 @@ Kontrol sürerken başka uygulamaya geçerseniz başlatma isteği iptal edilir. 
 
 Panelde **Yeni proje → ZIP seç → Yayına al** ile projenizi yükleyin. Sonraki kullanımlarda **Ana sunucu** anahtarı başlatır/durdurur. **Kolay kurulum** bu dört sayfayı yeniden açar. **Kurulumu sonra tamamla · Paneli aç**, hazırlık eksik olsa da paneli görüntüler; araç kontrolünü tamamlanmış saymaz.
 
-Ayrıntılı panel kullanımı [DASHBOARD.md](DASHBOARD.md), elle kurulum alternatifi [TERMUX-RUNTIME.md](TERMUX-RUNTIME.md#cihaz-hazırlığı) içindedir. [Güncel kaynak kodları](../PocketPaaS-SurecDuzeltmesi-source.zip) ve [0.4.0 doğrulama raporu](RUNTIME-FIX-VALIDATION.md) birlikte sunulur. Bu sürüm debug APK'dır; gerçek Android/Termux cihaz çalıştırması ve release doğrulaması henüz yapılmadı. [Önceki 0.2.0 kolay kurulum raporu](EASY-SETUP-VALIDATION.md), bu 0.4.0 arayüzünün cihaz üzerinde doğrulandığı anlamına gelmez.
+## 5 · Servisler (SSH ve Veritabanları)
+
+Ana sunucu çalıştıktan sonra paneldeki **Servisler** sekmesini açın:
+
+- **SSH erişimi (`sshd`):** Varsayılan port `8022`'dir (`1024–65535`, `8080/8081/8767` hariç). **Yeni yetkili anahtar ekle** ile bilgisayarınızdaki `ssh-ed25519` / `ssh-rsa` / `ecdsa` public key satırını ekleyin; `SHA256:` parmak izi otomatik doğrulanır ve `~/.ssh/authorized_keys` dosyasına yazılır. Dilerseniz **LAN üzerinden erişilebilir kıl (0.0.0.0)** ve **Parola ile girişe izin ver** seçeneklerini açabilirsiniz. SSH anahtarı açıldığında ekranda beliren `ssh -p 8022 ...` komutuna dokunarak panoya kopyalayabilirsiniz.
+- **Veritabanı servisleri:** **PostgreSQL** (`127.0.0.1:5432`), **Redis** (`127.0.0.1:6379`) ve **MariaDB** (`127.0.0.1:3306`) kartlarından önce **Kur** (`pkg install -y`), ardından **Başlat** düğmesine dokunun. İlk başlatmada veri dizini (`initdb` / `mariadb-install-db`) otomatik hazırlanır. Süreç bütçesini korumak için aynı anda en fazla 2 veritabanı servisi çalıştırılabilir.
+
+## 6 · Kayıtlar, Arama ve İmzalı Yedekleme
+
+Paneldeki **Kayıtlar** sekmesinde:
+
+- **Arama ve filtreleme:** Metin kutusundan alan adı veya olay mesajı arayabilir; **Seviye filtresi** (`INFO`, `WARNING`, `ERROR`) ve **Kategori filtresi** (`SYSTEM`, `SITE`, `DEPLOYMENT`, `SSH`, `DATABASE`, `SECURITY`) çipleriyle kayıtları daraltabilirsiniz.
+- **Log dışa aktarma:** **JSON dışa aktar** veya **CSV dışa aktar** düğmeleriyle filtrelenmiş yayın ve aktivite kayıtlarını panoya kopyalayabilirsiniz.
+- **Yedekleme ve geri yükleme:** Sağ üstteki **Yedekleme** düğmesine dokunarak Room v4 veritabanındaki SSH ayarlarını, yetkili anahtarları, servis durumlarını ve site özetlerini **HMAC-SHA256 imzalı JSON zarfı** olarak panoya kopyalayabilir veya daha önce aldığınız yedeği doğrulayarak geri yükleyebilirsiniz.
+
+Ayrıntılı panel kullanımı [DASHBOARD.md](DASHBOARD.md), elle kurulum alternatifi [TERMUX-RUNTIME.md](TERMUX-RUNTIME.md#cihaz-hazırlığı) içindedir. [Güncel kaynak kodları](../PocketPaaS-SurecDuzeltmesi-source.zip) ve [0.4.0 doğrulama raporu](RUNTIME-FIX-VALIDATION.md) birlikte sunulur. Bu sürüm debug APK'dır; gerçek Android/Termux cihaz çalıştırması ve release doğrulaması henüz yapılmadı. [Önceki 0.2.0 kolay kurulum raporu](EASY-SETUP-VALIDATION.md), bu arayüzün cihaz üzerinde doğrulandığı anlamına gelmez.

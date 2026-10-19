@@ -1,8 +1,8 @@
-# Pocket PaaS — Faz 1–7
+# Pocket PaaS — Faz 1–7 + 0.5.0 Platform Genişletmesi
 
-Kotlin ile Android APK projesi. Yedi fazın kodları tamamlandı: Clean Architecture/MVVM/Hilt temeli, Room, süreç motoru, Nginx/Cloudflare, ZIP deployment, Bearer korumalı Ktor API ve Jetpack Compose Dashboard. Rootsuz cihaz + Termux bağlantısı kullanılır; Nginx, Python, Node.js ve cloudflared Termux içinde çalışır.
+Kotlin ile Android APK projesi. Yedi fazın kodları ve **0.5.0 platform genişletmesi** tamamlandı: Clean Architecture/MVVM/Hilt temeli, **Room v4** (5 yeni tablo: `activity_events`, `deployments`, `services`, `ssh_settings`, `ssh_authorized_keys`), süreç motoru, Nginx/Cloudflare, **OpenSSH (`sshd`) yönetimi**, **PostgreSQL/Redis/MariaDB veritabanı servisleri**, ZIP deployment, genişletilmiş Bearer korumalı Ktor API, **HMAC-SHA256 imzalı yedekleme/geri yükleme**, **JSON/CSV log arşivleme ve arama** ile sekmeli Jetpack Compose Dashboard. Rootsuz cihaz + Termux bağlantısı kullanılır; Nginx, Python, Node.js, cloudflared, sshd ve veritabanı servisleri Termux içinde çalışır.
 
-**Güncel sürüm: 0.4.0-debug, süreç akışı ve durdurma düzeltmesi.** [Yeni APK'yı indir](../PocketPaaS-SurecDuzeltmesi-debug.apk) · [Kaynak kodları](../PocketPaaS-SurecDuzeltmesi-source.zip). Kurulum dört sayfaya ayrılır: **Termux → İzin → Araçlar → Kontrol**. Kurulumda ve panelde uygulama sürümü, 2. sayfanın altında sürekli görünen **İzin iste** ve **Pocket PaaS ayarlarını aç** düğmeleri vardır. Android izni, araç kurulumu, yerel API, Nginx ve internet tüneli ayrı durumlarla gösterilir. Komutu kopyalamak veya Termux'u açmak komutu çalıştırmaz; kullanıcı terminale yapıştırıp Enter'a basar.
+**Güncel sürüm: 0.5.0-debug, Room v4 + SSH + Veritabanı Servisleri + Yedekleme & Log Arşivleme.** [Yeni APK'yı indir](../PocketPaaS-SurecDuzeltmesi-debug.apk) · [Kaynak kodları](../PocketPaaS-SurecDuzeltmesi-source.zip). Kurulum dört sayfaya ayrılır: **Termux → İzin → Araçlar → Kontrol**. Kurulumda ve panelde uygulama sürümü, 2. sayfanın altında sürekli görünen **İzin iste** ve **Pocket PaaS ayarlarını aç** düğmeleri vardır. Android izni, araç kurulumu, yerel API, Nginx, internet tüneli, SSH ve veritabanı servisleri ayrı durumlarla gösterilir. Komutu kopyalamak veya Termux'u açmak komutu çalıştırmaz; kullanıcı terminale yapıştırıp Enter'a basar.
 
 0.4.0, Termux süreç çıktısını taşıyan Java `PipedInputStream` yerine coroutine'lerin hangi IO thread'inde devam ettiğine bağlı olmayan, ayrı ve sınırlı stdout/stderr byte tamponları kullanır. Geçmiş bir okuma hatası `await()` sonucunda korunur; **Durdur** ise sahip olunan sürecin gerçekten sonlandığını bağımsız olarak doğrulayabilir ve başarısız temizliği yeniden deneyebilir. Doğrulama yoksa sahiplik/PID kaydı korunur. Nginx/tünel başlangıç süre aşımı artık kullanıcı iptalinden ayrı `FAILED` ve açıklayıcı hata üretir. Paneldeki hata metinleri seçilip kopyalanabilir.
 
@@ -46,7 +46,24 @@ Telefon üzerinde kurulum için [KOLAY-KURULUM.md](KOLAY-KURULUM.md), panelin ku
 - `TermuxRuntimeRecovery`: authenticated process group reset, bilinmeyen PID reddi, commit journal uzlaştırması, eski URL/config/runtime kayıtlarını güvenli temizleme.
 - Room şema dışa aktarımı, Android manifest, Compose kaynakları, doğrulanmış Gradle Wrapper, release imzalama yapılandırması ve başlangıç testleri.
 
-`AppModule`, gerçek `Netty` fabrikasını ve API/runtime/recovery arayüzlerini singleton sağlar. `RemoteServerService` bu listener ve yönetilen süreçlerin yaşam döngüsünü yönetir.
+`AppModule`, gerçek `Netty` fabrikasını ve API/runtime/recovery/SSH/servis/yedekleme arayüzlerini singleton sağlar. `RemoteServerService` bu listener ve yönetilen süreçlerin yaşam döngüsünü yönetir.
+
+## 0.5.0 ile eklenen platform özellikleri
+
+- **Room v4 veritabanı (`MIGRATION_3_4`):** `activity_events` (500 kayıt retansiyonu), `deployments` (200 kayıt retansiyonu), `services`, `ssh_settings` ve `ssh_authorized_keys` (parmak izi `UNIQUE` indeksli, en fazla 32 anahtar) tabloları eklendi. Şema dosyası `app/schemas/dev.pocketpaas.data.local.PocketPaaSDatabase/4.json` ve `verification/room-jvm/schemas/.../4.json` altında senkron tutulur.
+- **SSH sunucusu (`TermuxSshManager`, `SshKeyFormat`, `SshdArguments`):** Varsayılan `8022` portu (`1024..65535`, `8080/8081/8767` rezerve), `ssh-ed25519` / `ssh-rsa` / `ecdsa-sha2-nistp*` public key wire doğrulaması ve `SHA256:` parmak izi üretimi, `~/.ssh/authorized_keys` atomik yazımı, `sshd -D` argv tabanlı argüman üretimi (shell enjeksiyonu yok), parola ile giriş ve LAN (`0.0.0.0`) erişim anahtarları, tek dokunuşla bağlantı komutu kopyalama.
+- **Yönetilen veritabanı servisleri (`TermuxServiceManager`, `ServiceCatalog`, `ServicePolicy`):** PostgreSQL (`127.0.0.1:5432`), Redis (`127.0.0.1:6379`) ve MariaDB (`127.0.0.1:3306`) için Termux `pkg install -y`, idempotent `initdb` / `mariadb-install-db` hazırlığı, TCP readiness probe ve süreç bütçesine uygun eşzamanlı en fazla 2 veritabanı servisi sınırı.
+- **Log arama, filtreleme ve dışa aktarma (`LogExportFormatter`, `ActivityFilter`):** Dashboard **Kayıtlar** sekmesinde metin arama, seviye (`INFO`/`WARNING`/`ERROR`) ve kategori (`SYSTEM`/`SITE`/`DEPLOYMENT`/`SSH`/`DATABASE`/`SECURITY`) filtre çipleri; RFC 4180 uyumlu ve tablo formül enjeksiyonuna (`=`, `+`, `-`, `@`) karşı korumalı CSV veya JSON dışa aktarma.
+- **HMAC-SHA256 imzalı yedekleme ve geri yükleme (`BackupCodec`, `DefaultPlatformBackupManager`):** Room v4 veritabanındaki SSH ayarları, yetkili anahtarlar, servis durumları, siteler ve son kayıtları API anahtarıyla HMAC-SHA256 imzalanmış JSON zarfı olarak dışa aktarma ve sabit zamanlı (`MessageDigest.isEqual`) imza doğrulamasıyla geri yükleme. Güvenlik gereği geri yükleme sonrası SSH kendiliğinden başlatılmaz (`enabled = false`).
+- **Genişletilmiş Remote API (`RemoteApiModule`):** Mevcut `/api/sites` ve `/api/deploy` uçlarına ek olarak Bearer korumalı yeni uçlar:
+  - `GET /api/ssh`, `POST /api/ssh/start`, `POST /api/ssh/stop`, `POST /api/ssh/settings`, `POST /api/ssh/keys`, `DELETE /api/ssh/keys/{id}`
+  - `GET /api/services`, `POST /api/services/{key}/install`, `POST /api/services/{key}/start`, `POST /api/services/{key}/stop`
+  - `GET /api/activity?limit=100&level=INFO&category=SSH&q=...`, `GET /api/deployments?limit=50&q=...`, `GET /api/logs/export?format=json|csv`
+  - `GET /api/backup/export`, `POST /api/backup/import`
+- **Otomatik doğrulama ve CI (`.github/workflows/verify.yml`):**
+  - `python3 verification/database/test_schema_v4.py` (gerçek SQLite üzerinde 1→2→3→4 migration zinciri ve indeks/retansiyon testleri)
+  - `python3 verification/database/test_policies.py` (SSH/Servis politikaları ve argüman güvenliği)
+  - `python3 verification/database/test_backup_and_logs.py` (HMAC-SHA256 yedek zarfı, CSV formül koruması ve Remote API sözleşmeleri)
 
 ## Sabitlenmiş sürümler
 

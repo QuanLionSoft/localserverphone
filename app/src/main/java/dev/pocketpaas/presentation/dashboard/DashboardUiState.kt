@@ -1,5 +1,6 @@
 package dev.pocketpaas.presentation.dashboard
 
+import dev.pocketpaas.domain.logs.ActivityFilter
 import dev.pocketpaas.domain.model.ActivityEvent
 import dev.pocketpaas.domain.model.DeploymentRecord
 import dev.pocketpaas.domain.model.NetworkState
@@ -23,6 +24,13 @@ data class ProjectDraft(
 data class SshDraft(
     val keyName: String = "",
     val publicKey: String = "",
+    val error: String? = null,
+)
+
+data class BackupDraft(
+    val importJson: String = "",
+    val requireSignature: Boolean = false,
+    val lastExportedJson: String? = null,
     val error: String? = null,
 )
 
@@ -53,6 +61,9 @@ data class DashboardUiState(
     val managedServices: List<ManagedServiceState> = emptyList(),
     val deployments: List<DeploymentRecord> = emptyList(),
     val activity: List<ActivityEvent> = emptyList(),
+    val activityFilter: ActivityFilter = ActivityFilter(),
+    val showBackupSheet: Boolean = false,
+    val backupDraft: BackupDraft = BackupDraft(),
     val selectedTab: DashboardTab = DashboardTab.PROJECTS,
 ) {
     val selectedSite: Site? get() = sites.firstOrNull { it.id == selectedSiteId }
@@ -61,6 +72,8 @@ data class DashboardUiState(
     val setupReady: Boolean get() = capabilities?.let { it.termuxInstalled && it.termuxCommandPermissionGranted } == true
     val databaseServices: List<ManagedServiceState> get() = managedServices.filter { it.serviceKey in DATABASE_KEYS }
     val sshConnectionCommand: String? get() = ssh.connectionCommand
+    val filteredActivity: List<ActivityEvent> get() = activity.filter(activityFilter::matches)
+    val filteredDeployments: List<DeploymentRecord> get() = deployments.filter(activityFilter::matchesDeployment)
 
     companion object {
         val DATABASE_KEYS = setOf("postgresql", "redis", "mariadb")

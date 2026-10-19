@@ -43,6 +43,10 @@ class DefaultActivityRepository @Inject constructor(
         return dao.recent(limit.coerceAtMost(MAXIMUM_QUERY_LIMIT)).map { it.toDomain() }
     }
 
+    override suspend fun clearAll() {
+        dao.deleteAll()
+    }
+
     private fun sanitize(text: String, maximumCharacters: Int): String =
         text.replace('\u0000', '\uFFFD').lineSequence().joinToString(" ").trim().take(maximumCharacters)
 

@@ -4,11 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pocketpaas.core.config.DeploymentPolicy
+import dev.pocketpaas.domain.backup.PlatformBackupManager
 import dev.pocketpaas.domain.dashboard.DashboardActions
 import dev.pocketpaas.domain.dashboard.DashboardDevice
 import dev.pocketpaas.domain.dashboard.DashboardNetworkState
 import dev.pocketpaas.domain.dashboard.DashboardOperationKind
 import dev.pocketpaas.domain.dashboard.DashboardOperationState
+import dev.pocketpaas.domain.logs.ActivityFilter
+import dev.pocketpaas.domain.logs.LogExportFormat
+import dev.pocketpaas.domain.logs.LogExportFormatter
+import dev.pocketpaas.domain.model.ActivityCategory
+import dev.pocketpaas.domain.model.ActivityLevel
 import dev.pocketpaas.domain.model.NetworkServiceStatus
 import dev.pocketpaas.domain.model.ProjectType
 import dev.pocketpaas.domain.model.SiteCollectionState
@@ -36,7 +42,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class MainViewModel(
     private val sites: SiteRepository,
     private val runtime: RemoteServerRuntime,
     network: DashboardNetworkState,
@@ -49,7 +55,40 @@ class MainViewModel @Inject constructor(
     private val managedServices: ManagedServices? = null,
     private val deploymentHistory: DeploymentHistoryRepository? = null,
     private val activityRepository: ActivityRepository? = null,
+    private val backupManager: PlatformBackupManager? = null,
 ) : ViewModel() {
+
+    @Inject
+    constructor(
+        sites: SiteRepository,
+        runtime: RemoteServerRuntime,
+        network: DashboardNetworkState,
+        actions: DashboardActions,
+        device: DashboardDevice,
+        apiKeys: ApiKeyStore,
+        initializePlatform: InitializePlatform,
+        deploymentPolicy: DeploymentPolicy,
+        sshManager: SshManager,
+        managedServices: ManagedServices,
+        deploymentHistory: DeploymentHistoryRepository,
+        activityRepository: ActivityRepository,
+        backupManager: PlatformBackupManager,
+    ) : this(
+        sites = sites,
+        runtime = runtime,
+        network = network,
+        actions = actions,
+        device = device,
+        apiKeys = apiKeys,
+        initializePlatform = initializePlatform,
+        deploymentPolicy = deploymentPolicy,
+        sshManager = sshManager,
+        managedServices = managedServices,
+        deploymentHistory = deploymentHistory,
+        activityRepository = activityRepository,
+        backupManager = backupManager,
+    )
+
     private val mutableState = MutableStateFlow(DashboardUiState())
     val state: StateFlow<DashboardUiState> = mutableState.asStateFlow()
     private var initialization: Job? = null
@@ -110,7 +149,10 @@ class MainViewModel @Inject constructor(
         }
         sshManager?.let { manager ->
             viewModelScope.launch {
-                manager.state.collect { ssh -> mutableState.update { it.copy(ssh = ssh) } }
+                manager.state.collect { ssh ->
+                    val keys = runCatching { manager.listAuthorizedKeys() }.getOrDefault(emptyList())
+                    mutableState.update { it.copy(ssh = ssh, sshKeys = keys) }
+                }
             }
         }
         managedServices?.let { services ->
@@ -120,12 +162,12 @@ class MainViewModel @Inject constructor(
         }
         deploymentHistory?.let { history ->
             viewModelScope.launch {
-                history.observeRecent(20).collect { records -> mutableState.update { it.copy(deployments = records) } }
+                history.observeRecent(50).collect { records -> mutableState.update { it.copy(deployments = records) } }
             }
         }
         activityRepository?.let { repository ->
             viewModelScope.launch {
-                repository.observeEvents(100).collect { events -> mutableState.update { it.copy(activity = events) } }
+                repository.observeEvents(200).collect { events -> mutableState.update { it.copy(activity = events) } }
             }
         }
         refresh()
@@ -151,7 +193,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    // --- Server / project actions (unchanged) ---
+    // --- Server / project actions ---
 
     fun masterSwitch(enabled: Boolean) {
         if (!enabled) {
@@ -328,7 +370,8 @@ class MainViewModel @Inject constructor(
             try {
                 SshKeyFormat.parse(draft.publicKey)
                 manager.addAuthorizedKey(draft.keyName.trim(), draft.publicKey.trim())
-                mutableState.update { it.copy(showSshSheet = false, sshDraft = SshDraft()) }
+                val keys = runCatching { manager.listAuthorizedKeys() }.getOrDefault(emptyList())
+                mutableState.update { it.copy(showSshSheet = false, sshDraft = SshDraft(), sshKeys = keys) }
                 notify("SSH anahtarı eklendi.")
             } catch (failure: IllegalArgumentException) {
                 mutableState.update { it.copy(sshDraft = it.sshDraft.copy(error = failure.message ?: "Anahtar biçimi hatalı.")) }
@@ -344,6 +387,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 manager.removeAuthorizedKey(id)
+                val keys = runCatching { manager.listAuthorizedKeys() }.getOrDefault(emptyList())
+                mutableState.update { it.copy(sshKeys = keys) }
                 notify("SSH anahtarı kaldırıldı.")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "Anahtar kaldırılamadı.") }
@@ -374,6 +419,121 @@ class MainViewModel @Inject constructor(
             try { services.stop(serviceKey) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { notify(failure.message ?: "Servis durdurulamadı.") }
+        }
+    }
+
+    // --- Log search, filtering & archiving ---
+
+    fun setActivitySearchQuery(query: String) {
+        mutableState.update { it.copy(activityFilter = it.activityFilter.copy(query = query.take(128))) }
+    }
+
+    fun setActivityLevelFilter(level: ActivityLevel?) {
+        mutableState.update { it.copy(activityFilter = it.activityFilter.copy(level = level)) }
+    }
+
+    fun setActivityCategoryFilter(category: ActivityCategory?) {
+        mutableState.update { it.copy(activityFilter = it.activityFilter.copy(category = category)) }
+    }
+
+    fun clearActivityFilters() {
+        mutableState.update { it.copy(activityFilter = ActivityFilter()) }
+    }
+
+    fun exportLogs(format: LogExportFormat) {
+        viewModelScope.launch {
+            try {
+                val current = state.value
+                val payload = LogExportFormatter.exportCombined(
+                    events = current.filteredActivity,
+                    records = current.filteredDeployments,
+                    format = format,
+                    exportedAt = System.currentTimeMillis(),
+                )
+                device.copySensitive(payload)
+                notify("${format.name} kayıt arşivi (${current.filteredActivity.size} olay, ${current.filteredDeployments.size} yayın) panoya kopyalandı.")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                notify("Kayıt arşivi dışa aktarılamadı.")
+            }
+        }
+    }
+
+    fun clearActivityLogs() {
+        val repository = activityRepository ?: return
+        viewModelScope.launch {
+            try {
+                repository.clearAll()
+                notify("Aktivite kayıtları temizlendi.")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                notify("Aktivite kayıtları temizlenemedi.")
+            }
+        }
+    }
+
+    // --- Backup & Restore ---
+
+    fun showBackupSheet() {
+        mutableState.update { it.copy(showBackupSheet = true, backupDraft = it.backupDraft.copy(error = null)) }
+    }
+
+    fun dismissBackupSheet() {
+        mutableState.update { it.copy(showBackupSheet = false) }
+    }
+
+    fun setBackupImportJson(value: String) {
+        mutableState.update { it.copy(backupDraft = it.backupDraft.copy(importJson = value.take(512 * 1024), error = null)) }
+    }
+
+    fun setBackupRequireSignature(required: Boolean) {
+        mutableState.update { it.copy(backupDraft = it.backupDraft.copy(requireSignature = required, error = null)) }
+    }
+
+    fun exportBackup() {
+        val manager = backupManager ?: run { notify("Yedekleme yöneticisi hazır değil."); return }
+        viewModelScope.launch {
+            try {
+                val json = manager.exportEnvelopeJson(signWithApiKey = true)
+                device.copySensitive(json)
+                mutableState.update { it.copy(backupDraft = it.backupDraft.copy(lastExportedJson = json, error = null)) }
+                notify("HMAC-SHA256 imzalı platform yedeği panoya kopyalandı.")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                mutableState.update { it.copy(backupDraft = it.backupDraft.copy(error = failure.message ?: "Yedek oluşturulamadı.")) }
+            }
+        }
+    }
+
+    fun importBackup() {
+        val manager = backupManager ?: run { notify("Yedekleme yöneticisi hazır değil."); return }
+        val draft = state.value.backupDraft
+        if (draft.importJson.isBlank()) {
+            mutableState.update { it.copy(backupDraft = it.backupDraft.copy(error = "Geri yüklenecek yedek JSON verisini yapıştırın.")) }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val summary = manager.importEnvelopeJson(draft.importJson, requireSignature = draft.requireSignature)
+                runCatching { sshManager?.refresh() }
+                runCatching { managedServices?.refresh() }
+                val keys = runCatching { sshManager?.listAuthorizedKeys().orEmpty() }.getOrDefault(emptyList())
+                mutableState.update {
+                    it.copy(
+                        showBackupSheet = false,
+                        backupDraft = BackupDraft(),
+                        sshKeys = keys,
+                    )
+                }
+                notify("Yedek geri yüklendi: ${summary.restoredSshKeys} SSH anahtarı, ${summary.restoredServices} servis kaydı.")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                mutableState.update { it.copy(backupDraft = it.backupDraft.copy(error = failure.message ?: "Yedek geri yüklenemedi.")) }
+            }
         }
     }
 

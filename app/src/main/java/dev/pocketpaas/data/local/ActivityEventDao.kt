@@ -17,6 +17,9 @@ abstract class ActivityEventDao {
     @Query("SELECT * FROM activity_events ORDER BY id DESC LIMIT :limit")
     abstract suspend fun recent(limit: Int): List<ActivityEventEntity>
 
+    @Query("DELETE FROM activity_events")
+    abstract suspend fun deleteAll(): Int
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     protected abstract suspend fun insertEvent(event: ActivityEventEntity): Long
 

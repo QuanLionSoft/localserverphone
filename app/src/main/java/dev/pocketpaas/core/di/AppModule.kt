@@ -17,8 +17,11 @@ import dev.pocketpaas.core.config.ServicePolicy
 import dev.pocketpaas.core.config.SiteStoragePolicy
 import dev.pocketpaas.core.config.RemoteApiPolicy
 import dev.pocketpaas.core.config.SshPolicy
+import dev.pocketpaas.data.backup.DefaultPlatformBackupManager
 import dev.pocketpaas.data.dashboard.android.AndroidDashboardActions
 import dev.pocketpaas.data.dashboard.android.AndroidDashboardDevice
+import dev.pocketpaas.data.deployment.RecordingDeploymentControl
+import dev.pocketpaas.domain.backup.PlatformBackupManager
 import dev.pocketpaas.domain.dashboard.DashboardActions
 import dev.pocketpaas.domain.dashboard.DashboardDevice
 import dev.pocketpaas.domain.dashboard.DashboardNetworkState
@@ -164,7 +167,16 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideDeploymentControl(implementation: DeploymentOrchestrator): DeploymentControl = implementation
+    fun provideDeploymentControl(
+        implementation: DeploymentOrchestrator,
+        history: dev.pocketpaas.domain.repository.DeploymentHistoryRepository,
+        activity: dev.pocketpaas.domain.repository.ActivityRepository,
+        clock: Clock,
+    ): DeploymentControl = RecordingDeploymentControl(implementation, history, activity, clock)
+
+    @Provides
+    @Singleton
+    fun providePlatformBackupManager(implementation: DefaultPlatformBackupManager): PlatformBackupManager = implementation
 
     @Provides
     @Singleton

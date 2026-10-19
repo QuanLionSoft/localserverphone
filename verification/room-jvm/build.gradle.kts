@@ -31,6 +31,7 @@ val productionSources = tasks.register<Sync>("syncProductionSources") {
             "dev/pocketpaas/data/setup/**",
             "dev/pocketpaas/data/ssh/**",
             "dev/pocketpaas/data/services/**",
+            "dev/pocketpaas/data/backup/**",
             "dev/pocketpaas/presentation/dashboard/DashboardUiState.kt",
         )
         exclude("dev/pocketpaas/data/local/DatabaseMigrations.kt")

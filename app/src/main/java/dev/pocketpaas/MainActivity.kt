@@ -200,6 +200,18 @@ class MainActivity : ComponentActivity() {
                     onInstallService = viewModel::installService,
                     onStartService = viewModel::startService,
                     onStopService = viewModel::stopService,
+                    onActivitySearchQueryChanged = viewModel::setActivitySearchQuery,
+                    onActivityLevelFilterChanged = viewModel::setActivityLevelFilter,
+                    onActivityCategoryFilterChanged = viewModel::setActivityCategoryFilter,
+                    onClearActivityFilters = viewModel::clearActivityFilters,
+                    onExportLogs = viewModel::exportLogs,
+                    onClearActivityLogs = viewModel::clearActivityLogs,
+                    onShowBackupSheet = viewModel::showBackupSheet,
+                    onDismissBackupSheet = viewModel::dismissBackupSheet,
+                    onBackupImportJsonChanged = viewModel::setBackupImportJson,
+                    onBackupRequireSignatureChanged = viewModel::setBackupRequireSignature,
+                    onExportBackup = viewModel::exportBackup,
+                    onImportBackup = viewModel::importBackup,
                     onSelectTab = viewModel::selectTab,
                 )
             }

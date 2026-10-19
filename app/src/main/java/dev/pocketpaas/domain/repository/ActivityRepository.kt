@@ -9,4 +9,5 @@ interface ActivityRepository {
     fun observeEvents(limit: Int = 200): Flow<List<ActivityEvent>>
     suspend fun record(category: ActivityCategory, level: ActivityLevel, message: String, detail: String? = null)
     suspend fun recent(limit: Int): List<ActivityEvent>
+    suspend fun clearAll() = Unit
 }

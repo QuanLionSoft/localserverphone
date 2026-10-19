@@ -36,6 +36,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -82,6 +83,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.pocketpaas.BuildConfig
+import dev.pocketpaas.domain.logs.LogExportFormat
+import dev.pocketpaas.domain.model.ActivityCategory
 import dev.pocketpaas.domain.model.ActivityLevel
 import dev.pocketpaas.domain.model.DeploymentStatus
 import dev.pocketpaas.domain.model.NetworkServiceStatus
@@ -135,6 +138,19 @@ fun DashboardScreen(
     onInstallService: (String) -> Unit = {},
     onStartService: (String) -> Unit = {},
     onStopService: (String) -> Unit = {},
+    // Activity & Backup
+    onActivitySearchQueryChanged: (String) -> Unit = {},
+    onActivityLevelFilterChanged: (ActivityLevel?) -> Unit = {},
+    onActivityCategoryFilterChanged: (ActivityCategory?) -> Unit = {},
+    onClearActivityFilters: () -> Unit = {},
+    onExportLogs: (LogExportFormat) -> Unit = {},
+    onClearActivityLogs: () -> Unit = {},
+    onShowBackupSheet: () -> Unit = {},
+    onDismissBackupSheet: () -> Unit = {},
+    onBackupImportJsonChanged: (String) -> Unit = {},
+    onBackupRequireSignatureChanged: (Boolean) -> Unit = {},
+    onExportBackup: () -> Unit = {},
+    onImportBackup: () -> Unit = {},
     onSelectTab: (DashboardTab) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -264,26 +280,48 @@ fun DashboardScreen(
                     }
                     DashboardTab.ACTIVITY -> {
                         item(key = "activity-title") {
-                            Text("Aktivite kaydı", style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Aktivite ve yedekleme", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).semantics { heading() })
+                                OutlinedButton(onClick = onShowBackupSheet, modifier = Modifier.testTag("open-backup-sheet")) {
+                                    Text("Yedekleme")
+                                }
+                            }
                         }
-                        if (state.activity.isEmpty() && state.deployments.isEmpty()) {
+                        item(key = "activity-controls") {
+                            ActivityFilterCard(
+                                state = state,
+                                onQueryChanged = onActivitySearchQueryChanged,
+                                onLevelChanged = onActivityLevelFilterChanged,
+                                onCategoryChanged = onActivityCategoryFilterChanged,
+                                onClearFilters = onClearActivityFilters,
+                                onExportJson = { onExportLogs(LogExportFormat.JSON) },
+                                onExportCsv = { onExportLogs(LogExportFormat.CSV) },
+                                onClearLogs = onClearActivityLogs,
+                            )
+                        }
+                        val visibleDeployments = state.filteredDeployments
+                        val visibleActivity = state.filteredActivity
+                        if (visibleActivity.isEmpty() && visibleDeployments.isEmpty()) {
                             item(key = "activity-empty") {
-                                InformationCard("Henüz kayıt yok", "Yayınlar ve sistem olayları burada listelenir.")
+                                InformationCard(
+                                    title = if (state.activityFilter.isActive) "Filtreyle eşleşen kayıt yok" else "Henüz kayıt yok",
+                                    body = if (state.activityFilter.isActive) "Arama metnini veya filtre seçimlerini temizleyip tekrar deneyin." else "Yayınlar ve sistem olayları burada listelenir.",
+                                )
                             }
                         }
-                        if (state.deployments.isNotEmpty()) {
+                        if (visibleDeployments.isNotEmpty()) {
                             item(key = "deployments-title") {
-                                Text("Son yayınlar", style = MaterialTheme.typography.titleMedium)
+                                Text("Son yayınlar (${visibleDeployments.size})", style = MaterialTheme.typography.titleMedium)
                             }
-                            state.deployments.forEach { record ->
+                            visibleDeployments.forEach { record ->
                                 item(key = "deployment-${record.id}") { DeploymentRow(record) }
                             }
                         }
-                        if (state.activity.isNotEmpty()) {
+                        if (visibleActivity.isNotEmpty()) {
                             item(key = "activity-subtitle") {
-                                Text("Sistem olayları", style = MaterialTheme.typography.titleMedium)
+                                Text("Sistem olayları (${visibleActivity.size})", style = MaterialTheme.typography.titleMedium)
                             }
-                            state.activity.take(30).forEach { event ->
+                            visibleActivity.take(50).forEach { event ->
                                 item(key = "activity-${event.id}") { ActivityRow(event) }
                             }
                         }
@@ -302,6 +340,25 @@ fun DashboardScreen(
             onChooseZip = { zipPicker.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
             onDeploy = onDeploy,
             onCancel = onCancelOperation,
+        )
+    }
+    if (state.showSshSheet) {
+        SshKeySheet(
+            draft = state.sshDraft,
+            onDismiss = onDismissSshSheet,
+            onNameChanged = onSshKeyNameChanged,
+            onKeyChanged = onSshPublicKeyChanged,
+            onAdd = onAddSshKey,
+        )
+    }
+    if (state.showBackupSheet) {
+        BackupRestoreSheet(
+            draft = state.backupDraft,
+            onDismiss = onDismissBackupSheet,
+            onImportJsonChanged = onBackupImportJsonChanged,
+            onRequireSignatureChanged = onBackupRequireSignatureChanged,
+            onExportBackup = onExportBackup,
+            onImportBackup = onImportBackup,
         )
     }
     state.selectedSite?.takeIf { !state.showAddProject }?.let { site ->
@@ -823,7 +880,7 @@ private fun SshCard(
                     }
                 }
             }
-            ssh.hostKeyFingerprint?.let {
+            ssh.settings.hostKeyFingerprint?.let {
                 Text("Host parmak izi: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -875,8 +932,129 @@ private fun SshCard(
             OutlinedButton(onClick = onShowSheet, modifier = Modifier.fillMaxWidth().testTag("add-ssh-key")) { Text("Yeni yetkili anahtar ekle") }
         }
     }
-    if (state.showSshSheet) {
-        SshKeySheet(state.sshDraft, onDismiss = onDismissSshSheet, onNameChanged = onSshKeyNameChanged, onKeyChanged = onSshPublicKeyChanged, onAdd = onAddSshKey)
+}
+
+@Composable
+private fun ActivityFilterCard(
+    state: DashboardUiState,
+    onQueryChanged: (String) -> Unit,
+    onLevelChanged: (ActivityLevel?) -> Unit,
+    onCategoryChanged: (ActivityCategory?) -> Unit,
+    onClearFilters: () -> Unit,
+    onExportJson: () -> Unit,
+    onExportCsv: () -> Unit,
+    onClearLogs: () -> Unit,
+) {
+    val filter = state.activityFilter
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedTextField(
+                value = filter.query,
+                onValueChange = onQueryChanged,
+                modifier = Modifier.fillMaxWidth().testTag("activity-search"),
+                label = { Text("Kayıtlarda ara") },
+                placeholder = { Text("Alan adı, mesaj, kategori…") },
+                singleLine = true,
+            )
+            Text("Seviye filtresi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(
+                    selected = filter.level == null,
+                    onClick = { onLevelChanged(null) },
+                    label = { Text("Tümü") },
+                )
+                ActivityLevel.entries.forEach { level ->
+                    FilterChip(
+                        selected = filter.level == level,
+                        onClick = { onLevelChanged(if (filter.level == level) null else level) },
+                        label = { Text(level.name) },
+                    )
+                }
+            }
+            Text("Kategori filtresi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(
+                    selected = filter.category == null,
+                    onClick = { onCategoryChanged(null) },
+                    label = { Text("Tümü") },
+                )
+                ActivityCategory.entries.forEach { category ->
+                    FilterChip(
+                        selected = filter.category == category,
+                        onClick = { onCategoryChanged(if (filter.category == category) null else category) },
+                        label = { Text(category.name) },
+                    )
+                }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onExportJson, modifier = Modifier.testTag("export-logs-json")) { Text("JSON dışa aktar") }
+                OutlinedButton(onClick = onExportCsv, modifier = Modifier.testTag("export-logs-csv")) { Text("CSV dışa aktar") }
+                if (filter.isActive) {
+                    TextButton(onClick = onClearFilters, modifier = Modifier.testTag("clear-activity-filters")) { Text("Filtreyi sıfırla") }
+                }
+                if (state.activity.isNotEmpty()) {
+                    TextButton(onClick = onClearLogs, modifier = Modifier.testTag("clear-activity-logs")) { Text("Kayıtları temizle") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BackupRestoreSheet(
+    draft: BackupDraft,
+    onDismiss: () -> Unit,
+    onImportJsonChanged: (String) -> Unit,
+    onRequireSignatureChanged: (Boolean) -> Unit,
+    onExportBackup: () -> Unit,
+    onImportBackup: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        modifier = Modifier.testTag("backup-sheet"),
+    ) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding().padding(start = 24.dp, end = 24.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text("Platform yedekleme ve geri yükleme", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+            Text(
+                "Room v4 veritabanındaki SSH ayarları, yetkili anahtarlar, servis durumları, siteler ve son kayıtları HMAC-SHA256 imzalı JSON zarfı olarak dışa aktarın veya geri yükleyin.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = onExportBackup,
+                modifier = Modifier.fillMaxWidth().testTag("export-backup"),
+            ) { Text("İmzalı yedeği panoya kopyala") }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text("Yedekten geri yükle", style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = draft.importJson,
+                onValueChange = onImportJsonChanged,
+                modifier = Modifier.fillMaxWidth().testTag("backup-import-json"),
+                label = { Text("Yedek JSON zarfı") },
+                placeholder = { Text("{\"version\":1,\"algorithm\":\"HMAC-SHA256\",…}") },
+                minLines = 4,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = draft.requireSignature,
+                    onCheckedChange = onRequireSignatureChanged,
+                    modifier = Modifier.testTag("backup-require-signature"),
+                )
+                Text("HMAC-SHA256 imzasını zorunlu tut", style = MaterialTheme.typography.bodySmall)
+            }
+            draft.error?.let { ErrorText(it) }
+            Button(
+                onClick = onImportBackup,
+                enabled = draft.importJson.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().testTag("confirm-import-backup"),
+            ) { Text("Yedeği doğrula ve geri yükle") }
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Kapat") }
+        }
     }
 }
 
