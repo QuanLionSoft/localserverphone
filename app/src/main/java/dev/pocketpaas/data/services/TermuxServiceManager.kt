@@ -170,9 +170,10 @@ class TermuxServiceManager(
                     stopFailure = description(failure)
                 }
             }
+            val installed = dao.getService(serviceKey)?.installed ?: true
             persist(
                 definition,
-                installed = probeInstalled(definition),
+                installed = installed,
                 status = ManagedServiceStatus.STOPPED,
                 processId = null,
                 lastError = stopFailure,
@@ -202,6 +203,24 @@ class TermuxServiceManager(
                     processId = running?.processId,
                     lastError = null,
                 )
+            }
+        }
+    }
+
+    override suspend fun stopAll() {
+        stopAllForSessionEnd()
+        lifecycle.withLock {
+            for (row in dao.getServices()) {
+                if (row.status != ManagedServiceStatus.STOPPED || row.processId != null || row.lastError != null) {
+                    dao.upsert(
+                        row.copy(
+                            status = ManagedServiceStatus.STOPPED,
+                            processId = null,
+                            lastError = null,
+                            updatedAt = clock.millis(),
+                        ),
+                    )
+                }
             }
         }
     }

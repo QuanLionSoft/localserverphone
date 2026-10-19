@@ -55,7 +55,15 @@ class RemoteServerService : Service() {
         )
         serviceScope.launch {
             runtime.state.collect { state ->
-                if (foreground && !destroyed) notificationManager.notify(NOTIFICATION_ID, notification(state))
+                if (foreground && !destroyed) {
+                    if (state.status == RemoteServerStatus.STOPPED && commandJob?.isActive != true) {
+                        foreground = false
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                        stopSelf()
+                    } else {
+                        notificationManager.notify(NOTIFICATION_ID, notification(state))
+                    }
+                }
             }
         }
     }

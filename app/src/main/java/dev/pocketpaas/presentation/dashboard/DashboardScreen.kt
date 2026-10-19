@@ -30,9 +30,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -41,6 +43,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -50,6 +55,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -152,9 +158,11 @@ fun DashboardScreen(
     onExportBackup: () -> Unit = {},
     onImportBackup: () -> Unit = {},
     onSelectTab: (DashboardTab) -> Unit = {},
+    onForceStopAll: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val snackbar = remember { SnackbarHostState() }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboard.current
     var showSetupHelp by rememberSaveable { mutableStateOf(false) }
@@ -171,35 +179,86 @@ fun DashboardScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbar) },
-        floatingActionButton = {
-            if (!state.showAddProject && state.selectedSite == null) {
-                ExtendedFloatingActionButton(
-                    onClick = onAddProject,
-                    modifier = Modifier.testTag("add-project").semantics { contentDescription = "Yeni proje ekle" },
-                    icon = { PlusMark() },
-                    text = { Text("Yeni proje") },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DashboardSidebar(
+                state = state,
+                showSetupHelp = showSetupHelp,
+                onSelectTab = { tab ->
+                    onSelectTab(tab)
+                    scope.launch { drawerState.close() }
+                },
+                onAddProject = {
+                    scope.launch { drawerState.close() }
+                    onAddProject()
+                },
+                onShowSshSheet = {
+                    onSelectTab(DashboardTab.SERVICES)
+                    scope.launch { drawerState.close() }
+                    onShowSshSheet()
+                },
+                onShowBackupSheet = {
+                    scope.launch { drawerState.close() }
+                    onShowBackupSheet()
+                },
+                onToggleSetupHelp = {
+                    showSetupHelp = !showSetupHelp
+                    scope.launch { drawerState.close() }
+                },
+                onOpenSetup = onOpenSetup?.let { open ->
+                    {
+                        scope.launch { drawerState.close() }
+                        open()
+                    }
+                },
+                onRefresh = {
+                    scope.launch { drawerState.close() }
+                    onRefresh()
+                },
+                onForceStopAll = {
+                    scope.launch { drawerState.close() }
+                    onForceStopAll()
+                },
+            )
         },
-    ) { insets ->
-        Box(Modifier.fillMaxSize().padding(insets), contentAlignment = Alignment.TopCenter) {
-            LazyColumn(
-                modifier = Modifier.widthIn(max = 840.dp).fillMaxSize().testTag("dashboard-list"),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 112.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                item(key = "header") {
-                    DashboardHeader(onRefresh, showSetupHelp, { showSetupHelp = !showSetupHelp }, onOpenSetup)
+    ) {
+        Scaffold(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbar) },
+            floatingActionButton = {
+                if (!state.showAddProject && state.selectedSite == null) {
+                    ExtendedFloatingActionButton(
+                        onClick = onAddProject,
+                        modifier = Modifier.testTag("add-project").semantics { contentDescription = "Yeni proje ekle" },
+                        icon = { PlusMark() },
+                        text = { Text("Yeni proje") },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
                 }
-                item(key = "master") {
-                    MasterCard(state, onMasterSwitch, onLanAccessChanged, onCopyApiKey)
-                }
+            },
+        ) { insets ->
+            Box(Modifier.fillMaxSize().padding(insets), contentAlignment = Alignment.TopCenter) {
+                LazyColumn(
+                    modifier = Modifier.widthIn(max = 840.dp).fillMaxSize().testTag("dashboard-list"),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 112.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    item(key = "header") {
+                        DashboardHeader(
+                            onOpenSidebar = { scope.launch { drawerState.open() } },
+                            onRefresh = onRefresh,
+                            showSetupHelp = showSetupHelp,
+                            onSetupHelp = { showSetupHelp = !showSetupHelp },
+                            onOpenSetup = onOpenSetup,
+                            onShowBackupSheet = onShowBackupSheet,
+                        )
+                    }
+                    item(key = "master") {
+                        MasterCard(state, onMasterSwitch, onLanAccessChanged, onCopyApiKey, onForceStopAll)
+                    }
                 if (showSetupHelp || state.initializing || !state.setupReady || state.setupFailed ||
                     state.runtime.status == RemoteServerStatus.FAILED || state.network.nginxStatus == NetworkServiceStatus.FAILED ||
                     state.network.tunnelStatus == NetworkServiceStatus.FAILED
@@ -329,6 +388,7 @@ fun DashboardScreen(
                 }
             }
         }
+        }
     }
 
     if (state.showAddProject) {
@@ -367,9 +427,154 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DashboardHeader(onRefresh: () -> Unit, showSetupHelp: Boolean, onSetupHelp: () -> Unit, onOpenSetup: (() -> Unit)?) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+private fun DashboardSidebar(
+    state: DashboardUiState,
+    showSetupHelp: Boolean,
+    onSelectTab: (DashboardTab) -> Unit,
+    onAddProject: () -> Unit,
+    onShowSshSheet: () -> Unit,
+    onShowBackupSheet: () -> Unit,
+    onToggleSetupHelp: () -> Unit,
+    onOpenSetup: (() -> Unit)?,
+    onRefresh: () -> Unit,
+    onForceStopAll: () -> Unit,
+) {
+    val runningDbCount = state.managedServices.count {
+        it.category == ServiceCategory.DATABASE && it.status == ManagedServiceStatus.RUNNING
+    }
+    val sshRunning = state.ssh.status == NetworkServiceStatus.RUNNING
+    ModalDrawerSheet(modifier = Modifier.widthIn(max = 320.dp).testTag("sidebar-drawer")) {
+        Column(
+            modifier = Modifier.fillMaxHeight().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ServerMark()
+                Column {
+                    Text("POCKET PAAS", style = MaterialTheme.typography.labelMedium, letterSpacing = 1.2.sp, color = MaterialTheme.colorScheme.primary)
+                    Text("Kontrol Merkezi", style = MaterialTheme.typography.titleLarge)
+                    Text("Sürüm ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))) {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Canlı Durum Özeti", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        StateBadge(
+                            label = "Sunucu · ${state.runtime.status.shortLabel}",
+                            active = state.runtime.status == RemoteServerStatus.RUNNING,
+                            failed = state.runtime.status == RemoteServerStatus.FAILED,
+                        )
+                        NetworkBadge("Nginx", state.network.nginxStatus)
+                        NetworkBadge("Tünel", state.network.tunnelStatus)
+                        NetworkBadge("SSH", state.ssh.status)
+                        StateBadge("DB · $runningDbCount aktif", runningDbCount > 0, false)
+                    }
+                }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text("BÖLÜMLER", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            NavigationDrawerItem(
+                label = { Text("Projeler ve Siteler") },
+                badge = { Text("${state.sites.size}") },
+                selected = state.selectedTab == DashboardTab.PROJECTS,
+                onClick = { onSelectTab(DashboardTab.PROJECTS) },
+                modifier = Modifier.testTag("sidebar-tab-projects"),
+            )
+            NavigationDrawerItem(
+                label = { Text("SSH ve Veritabanı Servisleri") },
+                badge = { Text("${runningDbCount + if (sshRunning) 1 else 0} aktif") },
+                selected = state.selectedTab == DashboardTab.SERVICES,
+                onClick = { onSelectTab(DashboardTab.SERVICES) },
+                modifier = Modifier.testTag("sidebar-tab-services"),
+            )
+            NavigationDrawerItem(
+                label = { Text("Aktivite, Günlükler ve Yedek") },
+                badge = { Text("${state.activity.size}") },
+                selected = state.selectedTab == DashboardTab.ACTIVITY,
+                onClick = { onSelectTab(DashboardTab.ACTIVITY) },
+                modifier = Modifier.testTag("sidebar-tab-activity"),
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text("HIZLI İŞLEMLER", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            NavigationDrawerItem(
+                label = { Text("Yeni Proje Yükle (ZIP)") },
+                selected = false,
+                onClick = onAddProject,
+                modifier = Modifier.testTag("sidebar-add-project"),
+            )
+            NavigationDrawerItem(
+                label = { Text("SSH Yetkili Anahtarı Ekle") },
+                selected = false,
+                onClick = onShowSshSheet,
+                modifier = Modifier.testTag("sidebar-add-ssh-key"),
+            )
+            NavigationDrawerItem(
+                label = { Text("Yedekleme ve Geri Yükleme") },
+                selected = false,
+                onClick = onShowBackupSheet,
+                modifier = Modifier.testTag("sidebar-backup"),
+            )
+            NavigationDrawerItem(
+                label = { Text(if (showSetupHelp) "Termux Yardımını Gizle" else "Termux Kurulum Komutları") },
+                selected = showSetupHelp,
+                onClick = onToggleSetupHelp,
+                modifier = Modifier.testTag("sidebar-termux-help"),
+            )
+            onOpenSetup?.let { open ->
+                NavigationDrawerItem(
+                    label = { Text("Kolay Kurulum Sihirbazı") },
+                    selected = false,
+                    onClick = open,
+                    modifier = Modifier.testTag("sidebar-easy-setup"),
+                )
+            }
+            NavigationDrawerItem(
+                label = { Text("Durumu Yenile") },
+                selected = false,
+                onClick = onRefresh,
+                modifier = Modifier.testTag("sidebar-refresh"),
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text("GÜÇ VE TEMİZLİK", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+            Button(
+                onClick = onForceStopAll,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ),
+                modifier = Modifier.fillMaxWidth().testTag("sidebar-force-stop"),
+            ) {
+                Text("Her Şeyi Durdur ve Sıfırla")
+            }
+            Text(
+                "Termux'u arka planda tetiklemeden ana sunucu, SSH, veritabanı ve askıda kalan tüm durumları anında durdurur ve sıfırlar.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DashboardHeader(
+    onOpenSidebar: () -> Unit,
+    onRefresh: () -> Unit,
+    showSetupHelp: Boolean,
+    onSetupHelp: () -> Unit,
+    onOpenSetup: (() -> Unit)?,
+    onShowBackupSheet: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedButton(
+                onClick = onOpenSidebar,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.testTag("open-sidebar").semantics { contentDescription = "Kenar menüsünü aç" },
+            ) {
+                MenuMark()
+                Text("Menü", modifier = Modifier.padding(start = 6.dp))
+            }
             ServerMark()
             Column(Modifier.weight(1f)) {
                 Text("POCKET PAAS", style = MaterialTheme.typography.labelMedium, letterSpacing = 1.2.sp, color = MaterialTheme.colorScheme.primary)
@@ -378,11 +583,14 @@ private fun DashboardHeader(onRefresh: () -> Unit, showSetupHelp: Boolean, onSet
             }
             TextButton(onClick = onRefresh, modifier = Modifier.testTag("refresh-dashboard")) { Text("Yenile") }
         }
-        TextButton(onClick = onSetupHelp, modifier = Modifier.testTag("termux-help")) {
-            Text(if (showSetupHelp) "Kurulum yardımını gizle" else "Termux kurulumu")
-        }
-        onOpenSetup?.let { open ->
-            TextButton(onClick = open, modifier = Modifier.testTag("easy-setup")) { Text("Kolay kurulum") }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = onSetupHelp, modifier = Modifier.testTag("termux-help")) {
+                Text(if (showSetupHelp) "Kurulum yardımını gizle" else "Termux kurulumu")
+            }
+            onOpenSetup?.let { open ->
+                TextButton(onClick = open, modifier = Modifier.testTag("easy-setup")) { Text("Kolay kurulum") }
+            }
+            TextButton(onClick = onShowBackupSheet) { Text("Yedekleme") }
         }
     }
 }
@@ -393,11 +601,19 @@ private fun MasterCard(
     onMasterSwitch: (Boolean) -> Unit,
     onLanAccessChanged: (Boolean) -> Unit,
     onCopyApiKey: () -> Unit,
+    onForceStopAll: () -> Unit = {},
 ) {
     val status = state.runtime.status
     val checked = status == RemoteServerStatus.STARTING || status == RemoteServerStatus.RUNNING || status == RemoteServerStatus.STOPPING
     val canToggle = status != RemoteServerStatus.STOPPING && status != RemoteServerStatus.FAILED &&
         (checked || (state.setupReady && !state.initializing && !state.setupFailed))
+    val runningDbCount = state.managedServices.count {
+        it.category == ServiceCategory.DATABASE && it.status == ManagedServiceStatus.RUNNING
+    }
+    val hasActiveOrFailedWork = status != RemoteServerStatus.STOPPED ||
+        state.operationBusy ||
+        state.ssh.status != NetworkServiceStatus.STOPPED ||
+        runningDbCount > 0
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -418,14 +634,27 @@ private fun MasterCard(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 NetworkBadge("Nginx", state.network.nginxStatus)
                 NetworkBadge("Tünel", state.network.tunnelStatus)
+                NetworkBadge("SSH", state.ssh.status)
+                StateBadge("DB · $runningDbCount aktif", runningDbCount > 0, false)
             }
             if (status == RemoteServerStatus.STARTING || status == RemoteServerStatus.STOPPING) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
             }
             state.runtime.error?.let { ErrorText(it) }
-            if (status == RemoteServerStatus.FAILED) {
-                OutlinedButton(onClick = { onMasterSwitch(false) }, modifier = Modifier.testTag("retry-cleanup")) {
-                    Text("Temizliği yeniden dene")
+            if (status == RemoteServerStatus.FAILED || hasActiveOrFailedWork) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (status == RemoteServerStatus.FAILED) {
+                        OutlinedButton(onClick = { onMasterSwitch(false) }, modifier = Modifier.testTag("retry-cleanup")) {
+                            Text("Temizliği yeniden dene")
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = onForceStopAll,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.testTag("force-stop-all"),
+                    ) {
+                        Text("Her şeyi durdur")
+                    }
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -775,6 +1004,17 @@ private fun ServerMark() {
 }
 
 @Composable
+private fun MenuMark() {
+    val color = MaterialTheme.colorScheme.primary
+    Canvas(Modifier.size(18.dp)) {
+        val stroke = 2.dp.toPx()
+        drawLine(color, Offset(2.dp.toPx(), size.height * 0.24f), Offset(size.width - 2.dp.toPx(), size.height * 0.24f), strokeWidth = stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(2.dp.toPx(), size.height * 0.50f), Offset(size.width - 2.dp.toPx(), size.height * 0.50f), strokeWidth = stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(2.dp.toPx(), size.height * 0.76f), Offset(size.width - 2.dp.toPx(), size.height * 0.76f), strokeWidth = stroke, cap = StrokeCap.Round)
+    }
+}
+
+@Composable
 private fun PlusMark() {
     val color = MaterialTheme.colorScheme.onPrimaryContainer
     Canvas(Modifier.size(22.dp)) {
@@ -807,6 +1047,13 @@ private val RemoteServerStatus.label: String get() = when (this) {
     RemoteServerStatus.STOPPING -> "Süreçler güvenle durduruluyor…"
     RemoteServerStatus.STOPPED -> "Sunucu kapalı"
     RemoteServerStatus.FAILED -> "İşlem tamamlanamadı; durdurup yeniden deneyin"
+}
+private val RemoteServerStatus.shortLabel: String get() = when (this) {
+    RemoteServerStatus.RUNNING -> "Çalışıyor"
+    RemoteServerStatus.STARTING -> "Başlatılıyor"
+    RemoteServerStatus.STOPPING -> "Durduruluyor"
+    RemoteServerStatus.STOPPED -> "Kapalı"
+    RemoteServerStatus.FAILED -> "Hata"
 }
 
 // --- New platform cards ---

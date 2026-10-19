@@ -85,6 +85,10 @@ class DiAndUiWiringTest(unittest.TestCase):
         text = read("presentation/dashboard/DashboardScreen.kt")
         self.assertIn("ActivityFilterCard", text)
         self.assertIn("BackupRestoreSheet", text)
+        self.assertIn("DashboardSidebar", text)
+        self.assertIn("ModalNavigationDrawer", text)
+        self.assertIn("force-stop-all", text)
+        self.assertIn("sidebar-force-stop", text)
         self.assertIn("ssh.settings.hostKeyFingerprint", text)
         self.assertNotIn("ssh.hostKeyFingerprint", text)
 

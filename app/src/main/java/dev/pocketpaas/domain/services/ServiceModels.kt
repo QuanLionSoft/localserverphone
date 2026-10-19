@@ -23,5 +23,6 @@ interface ManagedServices {
     suspend fun install(serviceKey: String): ManagedServiceState
     suspend fun start(serviceKey: String): ManagedServiceState
     suspend fun stop(serviceKey: String): ManagedServiceState
+    suspend fun stopAll() {}
     suspend fun refresh()
 }

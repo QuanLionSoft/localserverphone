@@ -283,7 +283,7 @@ class TermuxSshManager(
             it.copy(
                 status = NetworkServiceStatus.STOPPED,
                 processId = null,
-                lastError = stopFailure ?: it.lastError,
+                lastError = stopFailure,
             )
         }
         if (owned != null) {

@@ -194,6 +194,34 @@ class MainViewModel @Inject constructor(
         perform { actions.startServer(current.lanAccess) }
     }
 
+    fun forceStopAll() {
+        initialization?.cancel()
+        zipSelection?.cancel()
+        actions.cancelOperation()
+        actions.dismissResult()
+        viewModelScope.launch {
+            runCatching { sshManager.stop() }
+            runCatching { managedServices.stopAll() }
+            runCatching { runtime.forceReset() }
+            mutableState.update {
+                it.copy(
+                    operationBusy = false,
+                    operationDescription = null,
+                    runtime = RemoteServerState(RemoteServerStatus.STOPPED),
+                )
+            }
+            runCatching {
+                activityRepository.record(
+                    ActivityCategory.SERVER,
+                    ActivityLevel.INFO,
+                    "Tüm servisler ve arka plan işlemleri durduruldu.",
+                    "Termux arka planda yeniden tetiklenmeden durum sıfırlandı.",
+                )
+            }
+            notify("Tüm servisler durduruldu ve durum sıfırlandı.")
+        }
+    }
+
     fun setLanAccess(enabled: Boolean) {
         if (state.value.runtime.status == RemoteServerStatus.STOPPED && !state.value.operationBusy) {
             mutableState.update { it.copy(lanAccess = enabled) }

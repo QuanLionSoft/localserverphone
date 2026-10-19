@@ -27,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import dev.pocketpaas.data.remote.android.RemoteServerService
 import dev.pocketpaas.presentation.dashboard.DashboardScreen
 import dev.pocketpaas.presentation.dashboard.MainViewModel
 import dev.pocketpaas.presentation.theme.PocketPaaSTheme
@@ -213,6 +214,13 @@ class MainActivity : ComponentActivity() {
                     onExportBackup = viewModel::exportBackup,
                     onImportBackup = viewModel::importBackup,
                     onSelectTab = viewModel::selectTab,
+                    onForceStopAll = {
+                        startGate.cancel()
+                        pendingNotificationTicket = null
+                        setupViewModel.cancelCheck()
+                        viewModel.forceStopAll()
+                        runCatching { stopService(Intent(this@MainActivity, RemoteServerService::class.java)) }
+                    },
                 )
             }
         }
