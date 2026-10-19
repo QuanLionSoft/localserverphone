@@ -207,12 +207,12 @@ class MainViewModel @Inject constructor(
                 it.copy(
                     operationBusy = false,
                     operationDescription = null,
-                    runtime = RemoteServerState(RemoteServerStatus.STOPPED),
+                    runtime = it.runtime.copy(status = RemoteServerStatus.STOPPED, error = null),
                 )
             }
             runCatching {
                 activityRepository.record(
-                    ActivityCategory.SERVER,
+                    ActivityCategory.SYSTEM,
                     ActivityLevel.INFO,
                     "Tüm servisler ve arka plan işlemleri durduruldu.",
                     "Termux arka planda yeniden tetiklenmeden durum sıfırlandı.",
