@@ -101,6 +101,12 @@ class MainViewModel @Inject constructor(
                 val oldStatus = state.value.runtime.status
                 mutableState.update { it.copy(runtime = server) }
                 refreshProgress()
+                if (server.status == RemoteServerStatus.RUNNING && oldStatus != server.status) {
+                    viewModelScope.launch {
+                        runCatching { sshManager.refresh() }
+                        runCatching { managedServices.refresh() }
+                    }
+                }
                 if (server.status == RemoteServerStatus.FAILED && oldStatus != server.status) {
                     notify("Sunucu başlatılamadı veya temizliği tamamlanamadı. Termux ayarlarını kontrol edip Durdur ile yeniden deneyin.")
                 }
@@ -157,8 +163,10 @@ class MainViewModel @Inject constructor(
                     initializing = false, setupFailed = false, capabilities = platform.capabilities,
                     apiPort = platform.apiPort, nginxPort = platform.nginxPort,
                 ) }
-                runCatching { sshManager.refresh() }
-                runCatching { managedServices.refresh() }
+                if (runtime.state.value.status == RemoteServerStatus.RUNNING) {
+                    runCatching { sshManager.refresh() }
+                    runCatching { managedServices.refresh() }
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {

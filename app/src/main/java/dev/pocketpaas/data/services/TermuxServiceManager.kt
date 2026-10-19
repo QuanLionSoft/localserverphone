@@ -189,8 +189,10 @@ class TermuxServiceManager(
     }
 
     override suspend fun refresh() {
+        if (runtime.state.value.status != RemoteServerStatus.RUNNING) return
         lifecycle.withLock {
             for (definition in ServiceCatalog.definitions) {
+                if (runtime.state.value.status != RemoteServerStatus.RUNNING) break
                 val installed = runCatching { probeInstalled(definition) }.getOrDefault(false)
                 val running = handles[definition.serviceKey]
                 persist(

@@ -186,6 +186,7 @@ class TermuxSshManager(
 
     override suspend fun refresh() {
         val settings = ensureSettings()
+        if (runtime.state.value.status != RemoteServerStatus.RUNNING) return
         val fingerprint = settings.hostKeyFingerprint ?: runCatching { hostKeyFingerprint() }.getOrNull()
         if (fingerprint != null && fingerprint != settings.hostKeyFingerprint) {
             dao.updateHostKeyFingerprint(fingerprint, clock.millis())
