@@ -18,7 +18,12 @@ import dev.pocketpaas.domain.remote.ApiKeyStore
 import dev.pocketpaas.domain.remote.RemoteDeployRequest
 import dev.pocketpaas.domain.remote.RemoteServerRuntime
 import dev.pocketpaas.domain.remote.RemoteServerStatus
+import dev.pocketpaas.domain.repository.ActivityRepository
+import dev.pocketpaas.domain.repository.DeploymentHistoryRepository
 import dev.pocketpaas.domain.repository.SiteRepository
+import dev.pocketpaas.domain.services.ManagedServices
+import dev.pocketpaas.domain.ssh.SshKeyFormat
+import dev.pocketpaas.domain.ssh.SshManager
 import dev.pocketpaas.domain.usecase.InitializePlatform
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -27,7 +32,6 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -41,6 +45,10 @@ class MainViewModel @Inject constructor(
     private val apiKeys: ApiKeyStore,
     private val initializePlatform: InitializePlatform,
     private val deploymentPolicy: DeploymentPolicy,
+    private val sshManager: SshManager? = null,
+    private val managedServices: ManagedServices? = null,
+    private val deploymentHistory: DeploymentHistoryRepository? = null,
+    private val activityRepository: ActivityRepository? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(DashboardUiState())
     val state: StateFlow<DashboardUiState> = mutableState.asStateFlow()
@@ -100,6 +108,26 @@ class MainViewModel @Inject constructor(
                 }
             }
         }
+        sshManager?.let { manager ->
+            viewModelScope.launch {
+                manager.state.collect { ssh -> mutableState.update { it.copy(ssh = ssh) } }
+            }
+        }
+        managedServices?.let { services ->
+            viewModelScope.launch {
+                services.services.collect { list -> mutableState.update { it.copy(managedServices = list) } }
+            }
+        }
+        deploymentHistory?.let { history ->
+            viewModelScope.launch {
+                history.observeRecent(20).collect { records -> mutableState.update { it.copy(deployments = records) } }
+            }
+        }
+        activityRepository?.let { repository ->
+            viewModelScope.launch {
+                repository.observeEvents(100).collect { events -> mutableState.update { it.copy(activity = events) } }
+            }
+        }
         refresh()
     }
 
@@ -113,6 +141,8 @@ class MainViewModel @Inject constructor(
                     initializing = false, setupFailed = false, capabilities = platform.capabilities,
                     apiPort = platform.apiPort, nginxPort = platform.nginxPort,
                 ) }
+                runCatching { sshManager?.refresh() }
+                runCatching { managedServices?.refresh() }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -120,6 +150,8 @@ class MainViewModel @Inject constructor(
             }
         }
     }
+
+    // --- Server / project actions (unchanged) ---
 
     fun masterSwitch(enabled: Boolean) {
         if (!enabled) {
@@ -233,6 +265,119 @@ class MainViewModel @Inject constructor(
             }
         }
     }
+
+    // --- SSH ---
+
+    fun showSshSheet() { mutableState.update { it.copy(showSshSheet = true, sshDraft = SshDraft()) } }
+    fun dismissSshSheet() { mutableState.update { it.copy(showSshSheet = false) } }
+    fun setSshKeyName(value: String) { mutableState.update { it.copy(sshDraft = it.sshDraft.copy(keyName = value.take(256), error = null)) } }
+    fun setSshPublicKey(value: String) { mutableState.update { it.copy(sshDraft = it.sshDraft.copy(publicKey = value.take(8192), error = null)) } }
+
+    fun toggleSsh(enabled: Boolean) {
+        val manager = sshManager ?: run { notify("SSH yöneticisi hazır değil."); return }
+        viewModelScope.launch {
+            try {
+                if (enabled) manager.start() else manager.stop()
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { notify(failure.message ?: "SSH işlemi başarısız.") }
+        }
+    }
+
+    fun setSshPort(port: Int) {
+        val manager = sshManager ?: run { notify("SSH yöneticisi hazır değil."); return }
+        viewModelScope.launch {
+            try {
+                val current = state.value.ssh.settings
+                manager.updateSettings(current.copy(port = port))
+                notify("SSH portu :$port olarak güncellendi.")
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { notify(failure.message ?: "SSH portu güncellenemedi.") }
+        }
+    }
+
+    fun setSshPasswordAuth(enabled: Boolean) {
+        val manager = sshManager ?: return
+        viewModelScope.launch {
+            try {
+                val current = state.value.ssh.settings
+                manager.updateSettings(current.copy(passwordAuthEnabled = enabled))
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { notify(failure.message ?: "SSH ayarı değiştirilemedi.") }
+        }
+    }
+
+    fun setSshLan(enabled: Boolean) {
+        val manager = sshManager ?: return
+        viewModelScope.launch {
+            try {
+                val current = state.value.ssh.settings
+                manager.updateSettings(current.copy(listenLan = enabled))
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { notify(failure.message ?: "SSH ayarı değiştirilemedi.") }
+        }
+    }
+
+    fun addSshKey() {
+        val manager = sshManager ?: run { notify("SSH yöneticisi hazır değil."); return }
+        val draft = state.value.sshDraft
+        if (draft.keyName.isBlank() || draft.publicKey.isBlank()) {
+            mutableState.update { it.copy(sshDraft = it.sshDraft.copy(error = "Anahtar adı ve public key gereklidir.")) }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                SshKeyFormat.parse(draft.publicKey)
+                manager.addAuthorizedKey(draft.keyName.trim(), draft.publicKey.trim())
+                mutableState.update { it.copy(showSshSheet = false, sshDraft = SshDraft()) }
+                notify("SSH anahtarı eklendi.")
+            } catch (failure: IllegalArgumentException) {
+                mutableState.update { it.copy(sshDraft = it.sshDraft.copy(error = failure.message ?: "Anahtar biçimi hatalı.")) }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) {
+                mutableState.update { it.copy(sshDraft = it.sshDraft.copy(error = failure.message ?: "Anahtar eklenemedi.")) }
+            }
+        }
+    }
+
+    fun removeSshKey(id: Long) {
+        val manager = sshManager ?: return
+        viewModelScope.launch {
+            try {
+                manager.removeAuthorizedKey(id)
+                notify("SSH anahtarı kaldırıldı.")
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { notify(failure.message ?: "Anahtar kaldırılamadı.") }
+        }
+    }
+
+    // --- Managed database services ---
+
+    fun installService(serviceKey: String) {
+        val services = managedServices ?: return
+        viewModelScope.launch {
+            try { services.install(serviceKey); notify("Kurulum isteği gönderildi.") }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { notify(failure.message ?: "Kurulum başarısız.") }
+        }
+    }
+    fun startService(serviceKey: String) {
+        val services = managedServices ?: return
+        viewModelScope.launch {
+            try { services.start(serviceKey) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { notify(failure.message ?: "Servis başlatılamadı.") }
+        }
+    }
+    fun stopService(serviceKey: String) {
+        val services = managedServices ?: return
+        viewModelScope.launch {
+            try { services.stop(serviceKey) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { notify(failure.message ?: "Servis durdurulamadı.") }
+        }
+    }
+
+    fun selectTab(tab: DashboardTab) { mutableState.update { it.copy(selectedTab = tab) } }
 
     fun consumeNotice(id: Long) {
         mutableState.update { if (it.notice?.id == id) it.copy(notice = null) else it }

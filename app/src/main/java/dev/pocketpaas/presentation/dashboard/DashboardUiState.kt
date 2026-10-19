@@ -1,17 +1,28 @@
 package dev.pocketpaas.presentation.dashboard
 
+import dev.pocketpaas.domain.model.ActivityEvent
+import dev.pocketpaas.domain.model.DeploymentRecord
 import dev.pocketpaas.domain.model.NetworkState
 import dev.pocketpaas.domain.model.ProjectType
 import dev.pocketpaas.domain.model.RuntimeCapabilities
 import dev.pocketpaas.domain.model.Site
 import dev.pocketpaas.domain.remote.RemoteServerState
 import dev.pocketpaas.domain.remote.RemoteServerStatus
+import dev.pocketpaas.domain.services.ManagedServiceState
+import dev.pocketpaas.domain.ssh.SshAuthorizedKey
+import dev.pocketpaas.domain.ssh.SshState
 
 data class ProjectDraft(
     val domainName: String = "",
     val projectType: ProjectType = ProjectType.STATIC,
     val zipUri: String? = null,
     val zipName: String? = null,
+    val error: String? = null,
+)
+
+data class SshDraft(
+    val keyName: String = "",
+    val publicKey: String = "",
     val error: String? = null,
 )
 
@@ -35,9 +46,25 @@ data class DashboardUiState(
     val operationDescription: String? = null,
     val lanAccess: Boolean = false,
     val notice: DashboardNotice? = null,
+    val ssh: SshState = SshState(),
+    val sshKeys: List<SshAuthorizedKey> = emptyList(),
+    val sshDraft: SshDraft = SshDraft(),
+    val showSshSheet: Boolean = false,
+    val managedServices: List<ManagedServiceState> = emptyList(),
+    val deployments: List<DeploymentRecord> = emptyList(),
+    val activity: List<ActivityEvent> = emptyList(),
+    val selectedTab: DashboardTab = DashboardTab.PROJECTS,
 ) {
     val selectedSite: Site? get() = sites.firstOrNull { it.id == selectedSiteId }
     val serverRunning: Boolean get() = runtime.status == RemoteServerStatus.RUNNING
     val canManageSites: Boolean get() = serverRunning && !operationBusy && !siteReadFailed && !loadingSites
     val setupReady: Boolean get() = capabilities?.let { it.termuxInstalled && it.termuxCommandPermissionGranted } == true
+    val databaseServices: List<ManagedServiceState> get() = managedServices.filter { it.serviceKey in DATABASE_KEYS }
+    val sshConnectionCommand: String? get() = ssh.connectionCommand
+
+    companion object {
+        val DATABASE_KEYS = setOf("postgresql", "redis", "mariadb")
+    }
 }
+
+enum class DashboardTab { PROJECTS, SERVICES, ACTIVITY }

@@ -187,6 +187,20 @@ class MainActivity : ComponentActivity() {
                     onCopyApiKey = viewModel::copyApiKey,
                     onNoticeConsumed = viewModel::consumeNotice,
                     onOpenSetup = { startGate.cancel(); setupViewModel.cancelCheck(); setupViewModel.refreshPermission(); showSetupOverride = true },
+                    onSshToggle = viewModel::toggleSsh,
+                    onSshPortChanged = viewModel::setSshPort,
+                    onSshPasswordAuthChanged = viewModel::setSshPasswordAuth,
+                    onSshLanChanged = viewModel::setSshLan,
+                    onShowSshSheet = viewModel::showSshSheet,
+                    onDismissSshSheet = viewModel::dismissSshSheet,
+                    onSshKeyNameChanged = viewModel::setSshKeyName,
+                    onSshPublicKeyChanged = viewModel::setSshPublicKey,
+                    onAddSshKey = viewModel::addSshKey,
+                    onRemoveSshKey = viewModel::removeSshKey,
+                    onInstallService = viewModel::installService,
+                    onStartService = viewModel::startService,
+                    onStopService = viewModel::stopService,
+                    onSelectTab = viewModel::selectTab,
                 )
             }
         }

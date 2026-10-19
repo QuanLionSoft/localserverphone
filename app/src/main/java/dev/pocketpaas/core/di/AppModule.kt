@@ -13,8 +13,10 @@ import dev.pocketpaas.core.config.ProcessPolicy
 import dev.pocketpaas.core.config.DeploymentPolicy
 import dev.pocketpaas.core.config.NetworkPolicy
 import dev.pocketpaas.core.config.ServerConfig
+import dev.pocketpaas.core.config.ServicePolicy
 import dev.pocketpaas.core.config.SiteStoragePolicy
 import dev.pocketpaas.core.config.RemoteApiPolicy
+import dev.pocketpaas.core.config.SshPolicy
 import dev.pocketpaas.data.dashboard.android.AndroidDashboardActions
 import dev.pocketpaas.data.dashboard.android.AndroidDashboardDevice
 import dev.pocketpaas.domain.dashboard.DashboardActions
@@ -36,19 +38,27 @@ import dev.pocketpaas.domain.remote.RemoteSiteOperations
 import dev.pocketpaas.domain.remote.RemoteUploadStorage
 import dev.pocketpaas.domain.runtime.RuntimeRecovery
 import dev.pocketpaas.domain.runtime.RuntimeReset
+import dev.pocketpaas.data.local.ActivityEventDao
 import dev.pocketpaas.data.local.DatabaseMigrations
+import dev.pocketpaas.data.local.DeploymentRecordDao
+import dev.pocketpaas.data.local.ServiceStateDao
 import dev.pocketpaas.data.local.SiteDao
 import dev.pocketpaas.data.local.PlatformSettingsDao
 import dev.pocketpaas.data.local.PocketPaaSDatabase
+import dev.pocketpaas.data.local.SshDao
 import dev.pocketpaas.data.process.termux.TermuxAgentBootstrap
 import dev.pocketpaas.data.process.termux.TermuxBridge
 import dev.pocketpaas.data.process.termux.TermuxBridgeCredentialsStore
 import dev.pocketpaas.data.process.termux.TermuxProcessLauncher
 import dev.pocketpaas.data.process.termux.android.AndroidTermuxAgentBootstrap
 import dev.pocketpaas.data.process.termux.android.AndroidTermuxCredentialsStore
+import dev.pocketpaas.data.repository.DefaultActivityRepository
+import dev.pocketpaas.data.repository.DefaultDeploymentHistoryRepository
 import dev.pocketpaas.data.repository.DefaultPlatformRepository
 import dev.pocketpaas.data.repository.DefaultSiteRepository
 import dev.pocketpaas.data.repository.DefaultServerStateRepository
+import dev.pocketpaas.data.services.TermuxServiceManager
+import dev.pocketpaas.data.ssh.TermuxSshManager
 import dev.pocketpaas.data.process.ShellExecutor
 import dev.pocketpaas.data.runtime.ShellRuntimeFileStore
 import dev.pocketpaas.data.runtime.TermuxRuntimeArchiveTransfer
@@ -146,7 +156,63 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideSshPolicy(): SshPolicy = SshPolicy()
+
+    @Provides
+    @Singleton
+    fun provideServicePolicy(): ServicePolicy = ServicePolicy()
+
+    @Provides
+    @Singleton
     fun provideDeploymentControl(implementation: DeploymentOrchestrator): DeploymentControl = implementation
+
+    @Provides
+    @Singleton
+    fun provideActivityEventDao(database: PocketPaaSDatabase): ActivityEventDao = database.activityEventDao()
+
+    @Provides
+    @Singleton
+    fun provideDeploymentRecordDao(database: PocketPaaSDatabase): DeploymentRecordDao = database.deploymentRecordDao()
+
+    @Provides
+    @Singleton
+    fun provideSshDao(database: PocketPaaSDatabase): SshDao = database.sshDao()
+
+    @Provides
+    @Singleton
+    fun provideServiceStateDao(database: PocketPaaSDatabase): ServiceStateDao = database.serviceStateDao()
+
+    @Provides
+    @Singleton
+    fun provideActivityRepository(implementation: DefaultActivityRepository): dev.pocketpaas.domain.repository.ActivityRepository = implementation
+
+    @Provides
+    @Singleton
+    fun provideDeploymentHistoryRepository(implementation: DefaultDeploymentHistoryRepository): dev.pocketpaas.domain.repository.DeploymentHistoryRepository = implementation
+
+    @Provides
+    @Singleton
+    fun provideSshManager(
+        shell: ProcessExecutor,
+        dao: SshDao,
+        activity: dev.pocketpaas.domain.repository.ActivityRepository,
+        runtime: RemoteServerRuntime,
+        policy: SshPolicy,
+        clock: Clock,
+        @ApplicationScope scope: CoroutineScope,
+    ): dev.pocketpaas.domain.ssh.SshManager = TermuxSshManager(shell, dao, activity, runtime, policy, clock, scope)
+
+    @Provides
+    @Singleton
+    fun provideManagedServices(
+        shell: ProcessExecutor,
+        dao: ServiceStateDao,
+        activity: dev.pocketpaas.domain.repository.ActivityRepository,
+        runtime: RemoteServerRuntime,
+        policy: ServicePolicy,
+        clock: Clock,
+        @ApplicationScope scope: CoroutineScope,
+    ): dev.pocketpaas.domain.services.ManagedServices = TermuxServiceManager(shell, dao, activity, runtime, policy, clock, scope)
 
     @Provides
     @Singleton
@@ -165,7 +231,8 @@ object AppModule {
     fun provideDatabase(@ApplicationContext context: Context): PocketPaaSDatabase =
         Room.databaseBuilder(context, PocketPaaSDatabase::class.java, PocketPaaSDatabase.NAME)
             .setJournalMode(androidx.room.RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-            .addMigrations(DatabaseMigrations.MIGRATION_1_2, DatabaseMigrations.MIGRATION_2_3)
+            .addMigrations(DatabaseMigrations.MIGRATION_1_2, DatabaseMigrations.MIGRATION_2_3, DatabaseMigrations.MIGRATION_3_4)
+            .fallbackToDestructiveMigrationOnDowngrade()
             .build()
 
     @Provides

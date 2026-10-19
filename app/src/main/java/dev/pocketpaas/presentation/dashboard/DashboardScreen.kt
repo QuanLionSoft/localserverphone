@@ -82,6 +82,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.pocketpaas.BuildConfig
+import dev.pocketpaas.domain.model.ActivityLevel
+import dev.pocketpaas.domain.model.DeploymentStatus
 import dev.pocketpaas.domain.model.NetworkServiceStatus
 import dev.pocketpaas.domain.model.NetworkState
 import dev.pocketpaas.domain.model.ProjectType
@@ -90,6 +92,8 @@ import dev.pocketpaas.domain.model.Site
 import dev.pocketpaas.domain.model.SiteStatus
 import dev.pocketpaas.domain.remote.RemoteServerState
 import dev.pocketpaas.domain.remote.RemoteServerStatus
+import dev.pocketpaas.domain.services.ManagedServiceStatus
+import dev.pocketpaas.domain.services.ServiceCategory
 import dev.pocketpaas.presentation.theme.PocketPaaSTheme
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -116,6 +120,22 @@ fun DashboardScreen(
     onCopyApiKey: () -> Unit,
     onNoticeConsumed: (Long) -> Unit,
     onOpenSetup: (() -> Unit)? = null,
+    // SSH
+    onSshToggle: (Boolean) -> Unit = {},
+    onSshPortChanged: (Int) -> Unit = {},
+    onSshPasswordAuthChanged: (Boolean) -> Unit = {},
+    onSshLanChanged: (Boolean) -> Unit = {},
+    onShowSshSheet: () -> Unit = {},
+    onDismissSshSheet: () -> Unit = {},
+    onSshKeyNameChanged: (String) -> Unit = {},
+    onSshPublicKeyChanged: (String) -> Unit = {},
+    onAddSshKey: () -> Unit = {},
+    onRemoveSshKey: (Long) -> Unit = {},
+    // Services
+    onInstallService: (String) -> Unit = {},
+    onStartService: (String) -> Unit = {},
+    onStopService: (String) -> Unit = {},
+    onSelectTab: (DashboardTab) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -181,36 +201,93 @@ fun DashboardScreen(
                 if (state.operationBusy) {
                     item(key = "operation") { OperationCard(state.operationDescription, onCancelOperation) }
                 }
-                item(key = "sites-title") {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "Projeler",
-                            modifier = Modifier.weight(1f).semantics { heading() },
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                        Text("${state.sites.size} proje", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                when {
-                    state.siteReadFailed -> item(key = "sites-error") {
-                        InformationCard("Projeler okunamadı", "Kayıtlı projeler için veritabanını yeniden kontrol edin.") {
-                            TextButton(onClick = onRefresh) { Text("Tekrar dene") }
+                item(key = "tabs") { DashboardTabs(state.selectedTab, onSelectTab) }
+                when (state.selectedTab) {
+                    DashboardTab.PROJECTS -> {
+                        item(key = "sites-title") {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text("Projeler", modifier = Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+                                Text("${state.sites.size} proje", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        when {
+                            state.siteReadFailed -> item(key = "sites-error") {
+                                InformationCard("Projeler okunamadı", "Kayıtlı projeler için veritabanını yeniden kontrol edin.") {
+                                    TextButton(onClick = onRefresh) { Text("Tekrar dene") }
+                                }
+                            }
+                            state.loadingSites -> item(key = "sites-loading") {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                                    Text("Projeler yükleniyor…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            state.sites.isEmpty() -> item(key = "sites-empty") {
+                                InformationCard("İlk projenize yer açın", "Bir ZIP seçin; kurulum, uygulama süreci ve yönlendirme buradan yönetilsin.") {
+                                    TextButton(onClick = onAddProject) { Text("Proje ekle") }
+                                }
+                            }
+                        }
+                        items(state.sites, key = { it.id }) { site ->
+                            SiteCard(site, state.canManageSites, { onSiteSelected(site.id) }, { onStartSite(site.id) }, { onStopSite(site.id) })
                         }
                     }
-                    state.loadingSites -> item(key = "sites-loading") {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            LinearProgressIndicator(Modifier.fillMaxWidth())
-                            Text("Projeler yükleniyor…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    DashboardTab.SERVICES -> {
+                        item(key = "ssh-card") {
+                            SshCard(state, onSshToggle, onSshPortChanged, onSshPasswordAuthChanged, onSshLanChanged, onShowSshSheet, onRemoveSshKey) { url ->
+                                scope.launch {
+                                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("SSH bağlantısı", url)))
+                                    snackbar.showSnackbar("SSH komutu kopyalandı")
+                                }
+                            }
+                        }
+                        item(key = "services-title") {
+                            Text("Veritabanı servisleri", style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+                        }
+                        if (state.managedServices.isEmpty()) {
+                            item(key = "services-loading") {
+                                InformationCard("Servisler hazırlanıyor", "Durumlar yükleniyor. Yenile düğmesine dokunun.")
+                            }
+                        } else {
+                            state.managedServices.filter { it.category == ServiceCategory.DATABASE }.forEach { service ->
+                                item(key = "service-${service.serviceKey}") {
+                                    ServiceCard(service, state.serverRunning && !state.operationBusy, onInstallService, onStartService, onStopService)
+                                }
+                            }
+                            // Core / access read-only overview
+                            state.managedServices.filter { it.category != ServiceCategory.DATABASE }.forEach { service ->
+                                item(key = "service-${service.serviceKey}") {
+                                    ServiceCard(service, false, onInstallService, onStartService, onStopService)
+                                }
+                            }
                         }
                     }
-                    state.sites.isEmpty() -> item(key = "sites-empty") {
-                        InformationCard("İlk projenize yer açın", "Bir ZIP seçin; kurulum, uygulama süreci ve yönlendirme buradan yönetilsin.") {
-                            TextButton(onClick = onAddProject) { Text("Proje ekle") }
+                    DashboardTab.ACTIVITY -> {
+                        item(key = "activity-title") {
+                            Text("Aktivite kaydı", style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+                        }
+                        if (state.activity.isEmpty() && state.deployments.isEmpty()) {
+                            item(key = "activity-empty") {
+                                InformationCard("Henüz kayıt yok", "Yayınlar ve sistem olayları burada listelenir.")
+                            }
+                        }
+                        if (state.deployments.isNotEmpty()) {
+                            item(key = "deployments-title") {
+                                Text("Son yayınlar", style = MaterialTheme.typography.titleMedium)
+                            }
+                            state.deployments.forEach { record ->
+                                item(key = "deployment-${record.id}") { DeploymentRow(record) }
+                            }
+                        }
+                        if (state.activity.isNotEmpty()) {
+                            item(key = "activity-subtitle") {
+                                Text("Sistem olayları", style = MaterialTheme.typography.titleMedium)
+                            }
+                            state.activity.take(30).forEach { event ->
+                                item(key = "activity-${event.id}") { ActivityRow(event) }
+                            }
                         }
                     }
-                }
-                items(state.sites, key = Site::id) { site ->
-                    SiteCard(site, state.canManageSites, { onSiteSelected(site.id) }, { onStartSite(site.id) }, { onStopSite(site.id) })
                 }
             }
         }
@@ -673,6 +750,269 @@ private val RemoteServerStatus.label: String get() = when (this) {
     RemoteServerStatus.STOPPING -> "Süreçler güvenle durduruluyor…"
     RemoteServerStatus.STOPPED -> "Sunucu kapalı"
     RemoteServerStatus.FAILED -> "İşlem tamamlanamadı; durdurup yeniden deneyin"
+}
+
+// --- New platform cards ---
+
+@Composable
+private fun DashboardTabs(selected: DashboardTab, onSelect: (DashboardTab) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        DashboardTab.entries.forEach { tab ->
+            val isSelected = tab == selected
+            val label = when (tab) {
+                DashboardTab.PROJECTS -> "Projeler"
+                DashboardTab.SERVICES -> "Servisler"
+                DashboardTab.ACTIVITY -> "Kayıtlar"
+            }
+            if (isSelected) {
+                Button(onClick = { onSelect(tab) }, modifier = Modifier.testTag("tab-${tab.name.lowercase()}")) { Text(label) }
+            } else {
+                OutlinedButton(onClick = { onSelect(tab) }, modifier = Modifier.testTag("tab-${tab.name.lowercase()}")) { Text(label) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SshCard(
+    state: DashboardUiState,
+    onToggle: (Boolean) -> Unit,
+    onPortChanged: (Int) -> Unit,
+    onPasswordAuthChanged: (Boolean) -> Unit,
+    onLanChanged: (Boolean) -> Unit,
+    onShowSheet: () -> Unit,
+    onRemoveKey: (Long) -> Unit,
+    onCopy: (String) -> Unit,
+) {
+    val ssh = state.ssh
+    val running = ssh.status == NetworkServiceStatus.RUNNING
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("SSH erişimi", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        when (ssh.status) {
+                            NetworkServiceStatus.RUNNING -> "Çalışıyor :${ssh.settings.port}"
+                            NetworkServiceStatus.STARTING -> "Başlatılıyor…"
+                            NetworkServiceStatus.FAILED -> ssh.lastError ?: "Hata"
+                            NetworkServiceStatus.STOPPED -> "Kapalı :${ssh.settings.port}"
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(
+                    checked = running,
+                    onCheckedChange = onToggle,
+                    enabled = state.serverRunning || running,
+                    modifier = Modifier.testTag("ssh-switch").semantics { contentDescription = "SSH sunucusunu başlat veya durdur" },
+                )
+            }
+            ssh.lastError?.let { ErrorText(it) }
+            if (running && ssh.connectionCommand != null) {
+                Card(
+                    onClick = { onCopy(ssh.connectionCommand) },
+                    modifier = Modifier.fillMaxWidth().testTag("ssh-command"),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                ) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Bağlantı komutu", style = MaterialTheme.typography.labelSmall)
+                        SelectionContainer { Text(ssh.connectionCommand, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
+                        Text("Dokunarak kopyalayın.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            ssh.hostKeyFingerprint?.let {
+                Text("Host parmak izi: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            // Inline settings
+            var portText by remember(ssh.settings.port) { mutableStateOf(ssh.settings.port.toString()) }
+            OutlinedTextField(
+                value = portText,
+                onValueChange = { portText = it.filter { ch -> ch.isDigit() }.take(5) },
+                modifier = Modifier.fillMaxWidth().testTag("ssh-port"),
+                label = { Text("SSH portu") },
+                singleLine = true,
+                supportingText = { Text("1024–65535, 8080/8081 hariç") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                trailingIcon = {
+                    TextButton(onClick = {
+                        val port = portText.toIntOrNull()
+                        if (port != null) onPortChanged(port)
+                    }) { Text("Uygula") }
+                },
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = ssh.settings.passwordAuthEnabled,
+                    onCheckedChange = onPasswordAuthChanged,
+                    modifier = Modifier.testTag("ssh-password-auth"),
+                )
+                Text("Parola ile girişe izin ver", style = MaterialTheme.typography.bodySmall)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = ssh.settings.listenLan,
+                    onCheckedChange = onLanChanged,
+                    modifier = Modifier.testTag("ssh-lan"),
+                )
+                Text("LAN üzerinden erişilebilir kıl (0.0.0.0)", style = MaterialTheme.typography.bodySmall)
+            }
+            Text("${state.sshKeys.size} yetkili anahtar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (state.sshKeys.isNotEmpty()) {
+                state.sshKeys.forEach { key ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text(key.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(key.fingerprint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        TextButton(onClick = { onRemoveKey(key.id) }, modifier = Modifier.testTag("remove-ssh-${key.id}")) { Text("Kaldır") }
+                    }
+                }
+            }
+            OutlinedButton(onClick = onShowSheet, modifier = Modifier.fillMaxWidth().testTag("add-ssh-key")) { Text("Yeni yetkili anahtar ekle") }
+        }
+    }
+    if (state.showSshSheet) {
+        SshKeySheet(state.sshDraft, onDismiss = onDismissSshSheet, onNameChanged = onSshKeyNameChanged, onKeyChanged = onSshPublicKeyChanged, onAdd = onAddSshKey)
+    }
+}
+
+@Composable
+private fun SshKeySheet(
+    draft: SshDraft,
+    onDismiss: () -> Unit,
+    onNameChanged: (String) -> Unit,
+    onKeyChanged: (String) -> Unit,
+    onAdd: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        modifier = Modifier.testTag("ssh-key-sheet"),
+    ) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding().padding(start = 24.dp, end = 24.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text("Yetkili anahtar ekle", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+            Text("Bilgisayarınızdaki public key'in tek satırını yapıştırın (ssh-ed25519 / ssh-rsa / ecdsa).", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            OutlinedTextField(
+                value = draft.keyName,
+                onValueChange = onNameChanged,
+                modifier = Modifier.fillMaxWidth().testTag("ssh-key-name"),
+                label = { Text("Anahtar adı") },
+                placeholder = { Text("dizüstü bilgisayarım") },
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = draft.publicKey,
+                onValueChange = onKeyChanged,
+                modifier = Modifier.fillMaxWidth().testTag("ssh-public-key"),
+                label = { Text("Public key") },
+                placeholder = { Text("ssh-ed25519 AAAA…") },
+                minLines = 3,
+            )
+            draft.error?.let { ErrorText(it) }
+            Button(
+                onClick = onAdd,
+                enabled = draft.keyName.isNotBlank() && draft.publicKey.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().testTag("confirm-add-ssh-key"),
+            ) { Text("Ekle") }
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Vazgeç") }
+        }
+    }
+}
+
+@Composable
+private fun ServiceCard(
+    service: dev.pocketpaas.domain.services.ManagedServiceState,
+    canManage: Boolean,
+    onInstall: (String) -> Unit,
+    onStart: (String) -> Unit,
+    onStop: (String) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth().testTag("service-${service.serviceKey}"), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(service.displayName, style = MaterialTheme.typography.titleMedium)
+                    Text(service.description(service.serviceKey) ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                StateBadge(service.status.label, service.status == ManagedServiceStatus.RUNNING, service.status == ManagedServiceStatus.FAILED)
+            }
+            service.port?.let { Text("Port :$it · yalnızca 127.0.0.1", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            service.lastError?.let { ErrorText(it) }
+            if (service.category == ServiceCategory.DATABASE) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    when (service.status) {
+                        ManagedServiceStatus.RUNNING -> OutlinedButton(onClick = { onStop(service.serviceKey) }, enabled = canManage, modifier = Modifier.testTag("stop-service-${service.serviceKey}")) { Text("Durdur") }
+                        else -> {
+                            if (!service.installed) {
+                                Button(onClick = { onInstall(service.serviceKey) }, enabled = canManage, modifier = Modifier.testTag("install-service-${service.serviceKey}")) { Text("Kur") }
+                            }
+                            OutlinedButton(onClick = { onStart(service.serviceKey) }, enabled = canManage && service.installed, modifier = Modifier.testTag("start-service-${service.serviceKey}")) { Text("Başlat") }
+                        }
+                    }
+                }
+            } else if (!service.installed) {
+                TextButton(onClick = { onInstall(service.serviceKey) }, enabled = canManage, modifier = Modifier.testTag("install-service-${service.serviceKey}")) { Text("Paketi kur") }
+            }
+        }
+    }
+}
+
+private fun dev.pocketpaas.domain.services.ManagedServiceState.description(key: String): String? =
+    dev.pocketpaas.domain.services.ServiceCatalog.find(key)?.description
+
+@Composable
+private fun DeploymentRow(record: dev.pocketpaas.domain.model.DeploymentRecord) {
+    Card(modifier = Modifier.fillMaxWidth().testTag("deployment-${record.id}"), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(record.domainName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                StateBadge(record.status.label, record.status == DeploymentStatus.SUCCEEDED, record.status == DeploymentStatus.FAILED)
+            }
+            Text("${record.projectType.label} · ${record.archiveName ?: "—"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            record.message?.let { Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis) }
+        }
+    }
+}
+
+@Composable
+private fun ActivityRow(event: dev.pocketpaas.domain.model.ActivityEvent) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(
+            Modifier.size(8.dp).background(
+                when (event.level) {
+                    ActivityLevel.ERROR -> MaterialTheme.colorScheme.error
+                    ActivityLevel.WARNING -> MaterialTheme.colorScheme.tertiary
+                    ActivityLevel.INFO -> MaterialTheme.colorScheme.primary
+                }, CircleShape,
+            ),
+        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(event.message, style = MaterialTheme.typography.bodySmall)
+            event.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+            Text(event.category.name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+private val ManagedServiceStatus.label: String get() = when (this) {
+    ManagedServiceStatus.RUNNING -> "Çalışıyor"
+    ManagedServiceStatus.STARTING -> "Başlatılıyor"
+    ManagedServiceStatus.STOPPED -> "Durdu"
+    ManagedServiceStatus.FAILED -> "Hata"
+    ManagedServiceStatus.UNKNOWN -> "Bilinmiyor"
+}
+private val DeploymentStatus.label: String get() = when (this) {
+    DeploymentStatus.SUCCEEDED -> "Başarılı"
+    DeploymentStatus.FAILED -> "Başarısız"
+    DeploymentStatus.ROLLED_BACK -> "Geri alındı"
+    DeploymentStatus.CANCELLED -> "İptal edildi"
 }
 
 @Preview(name = "Dashboard", widthDp = 412, heightDp = 915, showBackground = true)
